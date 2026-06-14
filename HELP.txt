@@ -1,0 +1,464 @@
+THE DEN  —  HELP / CONTROLS
+============================================================
+
+A plain-text copy of the in-app help screen (Menu > Help / Controls).
+
+
+
+ADDRESSES
+---------
+
+Every node has a permanent address like 1A, 1B, 1C2A, 1C2B1F. The number-
+letter pairs are segments. 1A is a top-level timeline root. 1C2A means: the
+2nd branch off node 1C, first node of that branch. Addresses never change or
+get renumbered — deleting a node leaves a gap. The current address is always
+shown top-right in the header.
+
+
+READING & NAVIGATION
+--------------------
+
+  Tap a numbered choice
+      Navigate to that node. Up to 3 choices are shown at a time, randomly
+      sampled from the full pool.
+
+  Back button (tap)
+      Walk backward through the current segment (1C → 1B → 1A), skipping
+      emptied nodes. At a fork it jumps to the parent. At a top-level root it
+      opens the timeline picker.
+
+  Back button (hold)
+      Long-press to step back to the raw previous address even if it is
+      emptied — useful for authors editing empty nodes.
+
+  Forward button (tap)
+      Move forward through the current segment, skipping emptied nodes. Also
+      retraces your exact path if you have been pressing Back (it remembers
+      where you came from until you pick a different choice).
+
+  Forward button (hold)
+      Long-press to step forward to the raw next address even if it is
+      emptied.
+
+  Shuffle button
+      Draw 3 fresh choices at random from the full pool. The pool itself does
+      not change, just which 3 are shown.
+
+  Timeline picker
+      Pressing Back at a top-level node (1A, 2A...) opens a picker showing all
+      timelines, with its own shuffle and show-all. Lets you hop between
+      separate story strands.
+
+  Stories (home icon, top-left)
+      Return to the story picker to switch between stories.
+
+  Tap the address pill
+      Opens a small popup showing the full current address with a copy button.
+
+  See all options (menu)
+      Show every option from this node in full, sorted by address, no shuffle.
+
+
+WRITING
+-------
+
+You need an author name before writing. If you have not set one, you will be
+prompted the first time you tap Write. Names are per-story and per-honor-
+system — no passwords.
+
+  Write next
+      Open the editor for the next step in the current segment (e.g. if you
+      are at 1C, writes 1D). Automatically links the new node as a forward
+      continuation.
+
+  Write here
+      Fill in the current node if it is empty.
+
+  Edit (in menu)
+      Rewrite the content of the current node. Everything else (address,
+      rating, options) stays the same.
+
+  Branch
+      Create a new branch from the current node. The branch gets its own
+      content rating and appears as a choice here. You must write the current
+      node AND its continuation before branching, so readers always have a
+      forward path.
+
+  New timeline (in menu)
+      Start a completely new top-level story strand. It will appear on the
+      timeline picker when you re-enter this story.
+
+  Subtitle
+      Set when writing or editing. A short line shown in choice previews when
+      spoiler mode is on. Leave blank and the engine shows the first ~80
+      characters of text instead.
+
+  Rating
+      Set on branch-root nodes (any node whose address ends in the first
+      letter of a segment, like 1A, 1C2A). The rating is inherited by every
+      node in that branch. L = general, M = adult content, H = heavily mature.
+      The max-rating filter in settings hides anything above your threshold.
+
+
+TEXT FORMATTING
+---------------
+
+The editor toolbar has seven buttons: Bold, Italic, Underline, Color, Glossary
+link, Address jump, and + (more tools — custom fonts, redaction, and images
+live there). Select text first, then tap a button to wrap it — or tap with
+nothing selected to insert the markers and type between them.
+
+  Bold / Italic / Underline
+      Wrap text in **bold**, *italic*, or _underline_. Single * and _ stay
+      literal next to letters, so "5 * 3" and snake_case do not trigger.
+
+  Size
+      Wrap text in matched hashes to enlarge it: ##text## is a small bump,
+      ###text### bigger, ####text#### biggest (capped). Two hashes minimum, so
+      a lone # or "issue #42" stays literal. Sizes are relative, so they scale
+      with your accessibility text setting.
+
+  Color
+      The palette button gives named colors (theme-tuned), your recent custom
+      colors, and a color wheel. Wraps text as {color:text} for names or
+      {#hexcode:text} for exact colors.
+
+  Glossary link
+      Inserts [[display|key]] — a wiki reference (see Glossary below).
+
+  Address jump
+      Inserts ((display|address)) — a shimmering link that teleports the
+      reader to another address when tapped. Respects the rating filter and
+      refuses emptied or missing targets with an explanation. Good for
+      "meanwhile..." cross-references without merging branches.
+
+  Custom fonts
+      Under the + button. Build a fictional alphabet, then wrap text in it
+      with {{Font Name:text}} — the letters render as your glyphs while
+      staying real text underneath (so links, color, and copy/paste still work
+      through them). See Custom fonts below.
+
+
+COMBINING FORMATTING
+--------------------
+
+All formatting nests freely and composes in any order — bold inside color,
+color inside a size, a glyph wrapping a colored link, and so on. A few worked
+examples:
+
+  Big red header
+      ##{red:The Gate}## — size wrapping color.
+
+  Colored glossary link
+      {red:[[Sister Margaret|margaret]]} — color wrapping a link. With link
+      mode on, the link colour wins; off, your colour shows.
+
+  Glyph title, sized
+      ###{{Elder Runes:The Pact}}### — glyphs scale up with the size because
+      they size to the text.
+
+  Everything at once
+      ##{red:_**[[the door|door]]**_}## — big, red, underlined, bold, and a
+      working link, all on one phrase.
+
+Ordering tip: there is no required order — ##{red:x}## and {red:##x##} both
+work. The renderer figures out the nesting either way. The only thing that
+cannot wrap a whole link or jump is nothing — they all compose. If a marker
+ever shows up literally in the reading view, it usually means it was left
+unpaired (a stray ## or a missing closing brace); pairing it fixes it.
+
+
+GLOSSARY (THE WIKI LAYER)
+-------------------------
+
+The glossary is a spoiler-safe wiki built into each story. Entries are scoped
+by ancestry — a reader at 1C cannot see an entry stamped at 1F, even if they
+share the same key. Entries on parallel branches are also isolated from each
+other. This means characters can have evolving or contradictory truths
+depending on where in the story you are.
+
+  How to create a reference
+      While writing or editing any node, include [[Display text|key]] in the
+      text. The display text is what readers see. The key is a short
+      identifier (letters, digits, underscores, dashes). Example: [[Sister
+      Margaret|sister_margaret]] or [[The old lighthouse|lighthouse]].
+      Multiple display variations can point to the same key.
+
+  Links mode (menu toggle)
+      When on, references render as tappable orange spans with [1] [2]
+      numbers. Tap any to open the entry. When off, references render as plain
+      display text — no visual distinction.
+
+  Tap an orange reference
+      Opens the glossary sheet for that key. If no entry exists yet at your
+      ancestry, you see a Create button. If one exists upstream, you can read
+      it and choose to edit.
+
+  Creating an entry
+      Tap a reference (links mode on), or go to Menu → Glossary → tap any key.
+      Give it a display title and body text. The entry is stamped at your
+      current address.
+
+  Editing an entry
+      When you edit an existing entry that was stamped upstream, a new copy is
+      created stamped at your current node. The upstream version is untouched
+      — earlier readers still see the old version. This is the ancestry
+      scoping in action.
+
+  Glossary (in menu)
+      Lists every entry visible from your current position — closest-ancestor
+      version per key. Keys on other branches or ahead in the timeline are
+      intentionally absent.
+
+
+CUSTOM FONTS
+------------
+
+Build fictional alphabets and write text in them. The glyphs render in the
+reading view while the real letters stay underneath, so links, colour, sizing,
+and copy/paste all keep working through your script. Open the + button in the
+editor, then Manage custom fonts.
+
+  Making a set
+      Create a set and give it a name (the name is how you reference it, and
+      names must be unique). Pick a grid size from 4×4 (crude, minimal) to
+      16×16 (detailed, flowing) — this locks once the set has glyphs. Choose a
+      smoothing mode: Sharp (straight lines), Rounded (straight lines with
+      softened corners), or Flowing (fully curved).
+
+  Drawing a glyph
+      Tap a letter, number, or punctuation slot, then tap points on the grid
+      to connect them into strokes. New stroke lifts the pen; Undo removes the
+      last point; Clear wipes it. Set per-glyph thickness with the stepper,
+      and Preview shows it large before saving.
+
+  Using a font
+      Wrap text as {{Font Name:your text}}. The + button → Insert glyph text
+      does this for you with a picker. Letters you have not drawn yet fall
+      back to normal text, so a half-finished set still works (mixed).
+
+  Randomize a glyph
+      In the glyph editor, below the drawing tools. Picks a style (vertical,
+      horizontal, squared, or none) and a complexity, then offers a wall of
+      generated glyphs — tap one to drop it on the canvas as a starting point.
+      Not AI, just an algorithm; saves you starting every letter from a blank
+      grid.
+
+  Sharing
+      Fonts are saved with the story and travel inside exported .cyoa files,
+      so anyone who imports the story gets your alphabets too.
+
+
+REDACTION
+---------
+
+For when something is so classified the reader does not even get to guess.
+Select text in the editor, tap +, then Redact selection. The characters are
+replaced with █ block glyphs — permanently. This is not a hide-it overlay; the
+original text is gone, not tucked underneath. Line breaks survive so the shape
+of the page holds.
+
+  How
+      Editor → select text → + → Redact selection. Greyed out until you
+      actually select something.
+
+  Permanent
+      There is no un-redact. The node literally contains the block characters
+      afterwards, which is the whole point — it travels as plain text and
+      nobody can dig the original back out. Redact in haste, repent at
+      leisure.
+
+
+IMAGES
+------
+
+Drop a picture into a node — sketches, maps, a research-log photo. It sits
+inline at the spot you placed it, with text above and below. Strictly
+contained to its node; there is no shared gallery to wrangle.
+
+  Inserting
+      Editor → + → Insert image → pick a file. It lands on its own line as a
+      [IMG:…] marker showing the filename, so you can see where it sits while
+      you keep writing. Drag-free: write around it like any other line.
+
+  The marker
+      That [IMG:id:filename] line is just text — delete it, move it, type
+      around it freely. Only the id matters, so you can even rename the
+      filename part and the picture still shows. Mangle it badly and it just
+      falls back to plain text, no harm done.
+
+  In the reader
+      The marker becomes the actual image, sized to fit the column. Tap it to
+      open it full-size without leaving the page.
+
+  Formats
+      JPEG, PNG, WebP, GIF — whatever your browser can display. The original
+      is kept as-is (no quality-mangling re-encode). HEIC and other oddballs
+      get politely refused on insert rather than showing up broken.
+
+  Sharing & cleanup
+      Images travel inside exported .cyoa files. Delete the marker (or the
+      node) and the picture is swept out on the next export, so dead weight
+      does not ride along.
+
+
+SPOILER MODE
+------------
+
+  What it does
+      Hides full choice text. Shows subtitles instead, or a short first-line
+      preview if no subtitle is set. Useful for collaborative stories where
+      you want to pick a path without reading ahead.
+
+  Toggle
+      Menu → Spoilers on/off. Also in Settings.
+
+
+BOOKMARKS
+---------
+
+  Bookmark button (nav bar)
+      Save the current node. Tap again to remove. The icon fills in when
+      bookmarked.
+
+  Bookmarks (menu)
+      Open the list. Tap any entry to jump. Swipe-ish trash button to remove
+      individually. Bookmarks are per-story.
+
+
+SEARCH
+------
+
+  keyword:word
+      Find nodes containing that word in their text. Example:
+      keyword:lighthouse
+
+  author:name
+      Find nodes written by a specific author. Example: author:Fox
+
+  address:1C2
+      Find nodes whose address contains that fragment. Example: address:1C2
+
+  Plain text
+      Searches all fields — text content, author name, and address.
+
+
+EXPORT & IMPORT
+---------------
+
+  Export this branch
+      Saves the current node and all its descendants as a .cyoa file. Includes
+      glossary entries stamped within the subtree. This is the main way to
+      share a part of a story.
+
+  Export entire story
+      Saves every node, option, glossary entry, and custom font in the story.
+
+  Export path
+      Walks backward from the current node to the root and exports the linear
+      narrative thread as a readable .txt file. Not importable — this is for
+      reading, not sharing.
+
+  Import
+      Tap Import in the story picker or Menu → Import. Pick a .cyoa file. The
+      imported tree is grafted as a new branch at your current node. Addresses
+      get rewritten automatically so they do not collide with existing
+      content.
+
+  Compatibility
+      .cyoa files are interchangeable with the bash terminal version of this
+      engine. Same format, same address system.
+
+
+FORCED SHIFT
+------------
+
+  What it does
+      A chaos mechanic. Every navigation increments a counter. When the
+      counter hits the trigger, you are thrown to a random node and the
+      trigger increases by 1 (so the next shift takes longer). Meant for
+      collaborative or exploratory reading.
+
+  Toggle
+      Menu → Forced shift on/off. Counter shown in Settings.
+
+  Reset counter
+      Settings → Reset shift counter.
+
+
+RATING FILTER
+-------------
+
+  Max rating (in Settings)
+      Set to L, M, or H. Nodes above your threshold are hidden from choice
+      lists. They still exist — just invisible to you. Useful for reading
+      community stories with mixed content ratings.
+
+
+AUTHOR
+------
+
+  Setting your name
+      Menu → Author. Names are per-story, not global. No passwords or accounts
+      — the honor system applies.
+
+  Rename
+      Menu → Author → Rename. Updates all nodes you have written in this
+      story.
+
+  Check availability
+      Menu → Author → Check name. Tells you if a name is already in use before
+      you claim it.
+
+
+TREE VIEW
+---------
+
+  Menu → Tree view
+      A grid map of the whole story. Continuations stack upward in a column;
+      branches step up and to the right. Your current node is highlighted in
+      orange. Tap any node to jump there.
+
+  Node states
+      Solid box = written. Dim dashed box = emptied. Faint orange box with + =
+      a gap (an address with no node yet) — tap to write it.
+
+  Eye toggle
+      Top-right of the tree. Hides emptied nodes entirely so the layout
+      compacts. Re-centers on your current node after toggling.
+
+
+ACCESSIBILITY
+-------------
+
+Menu → Accessibility. Three independent controls, each in 5% steps. Reading
+text scales the story/editor font. UI / chrome scales buttons and headers.
+Reading width caps the column width on wide screens (or Full width). On a
+desktop, a one-time setup popup appears after onboarding so larger screens are
+not stuck with mobile sizing.
+
+
+KNOWN LIMITATIONS
+-----------------
+
+  Pipes and newlines
+      Avoid | and actual line breaks in author names, story titles, and
+      glossary titles. They will corrupt .cyoa export files. Node text is fine
+      — it handles newlines internally.
+
+  Per-node delete is gone
+      Use Empty this node instead — it clears the text and skips the node in
+      choice lists, but preserves the address, the OPTION wiring, and any
+      descendants. You can write new content into it at any time. Erase
+      content and delete story remain available for coarse, intentional wipes.
+
+  No node insertion
+      You cannot insert a node between two existing ones — addresses never
+      renumber. Plan with gaps if you think you will need room, or use a
+      branch.
+
+  Forward references
+      You can write [[display|key]] markup before creating the glossary entry.
+      The link will render orange but tapping it shows a Create prompt instead
+      of an entry.
+
