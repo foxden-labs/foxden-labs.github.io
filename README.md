@@ -5,7 +5,7 @@
 <h1 align="center">The Den</h1>
 
 <p align="center">
-  <em>Write, branch, and read choose-your-own-adventure stories in a single file that runs entirely in your browser, online and offline.</em>
+  <em>Write, branch, and read choose-your-own-adventure stories in a single HTML file or a lightweight Android app.</em>
 </p>
 
 <p align="center">
@@ -38,6 +38,7 @@ It runs as one self-contained web page. Nothing to install, no account to make, 
 - **Private by design.** Your writing never leaves your device. There's no server to send it to, so there's nothing to harvest, leak, or sell.
 - **Free, and staying that way.** No ads. No tracking. No accounts. No upsell, ever. It's open source under the AGPL, which means it stays free and open *forever.* Anyone can read it, run it, fork it, and build on it.
 - **Learn by doing.** That bundled tutorial takes you from "what is this" to writing in a single sitting of around 20 minutes or so.
+- **Install the app.** Now available directly on your phone.
 
 ## Writing and branching
 
@@ -102,7 +103,8 @@ Stories export to a single portable file and import just as cleanly. The standou
 There's nothing to install.
 
 1. **Online —** open [the hosted version](https://foxden-labs.github.io/).
-2. **Local —** download `index.html` and open it in any modern browser. That single file *is* the whole app. Some browsers have a habit of "forgetting" html files, but all the data still gets saved. Put the file on your home screen and as long as you don't clear your browser history, everything will be waiting for you on reload. Alternatively, host it yourself on your own computer. The file is tiny so you won't even notice the performance hit.
+2. **Local HTML file —** download `index.html` and open it in any modern browser. That single file *is* the whole app. Some browsers have a habit of "forgetting" html files, but all the data still gets saved. Put the file on your home screen and as long as you don't clear your browser history, everything will be waiting for you on reload. Alternatively, host it yourself on your own computer. The file is tiny so you won't even notice the performance hit.
+3. **Android app —** check the releases page for the latest version. Relatively new addition, thank you Github for letting me borrow your server time to build it, my laptop would quite literally fry itself.
 
 <p align="center">
   <img src="assets/screenshots/story_picker.jpg" alt="The story picker: stories stored on the device, with options to start a new one or import a .cyoa file" width="300">
