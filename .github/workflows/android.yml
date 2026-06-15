@@ -54,14 +54,35 @@ jobs:
       - name: Generate app icons
         run: npx @capacitor/assets generate --android --iconBackgroundColor '#000000' --iconBackgroundColorDark '#000000' --splashBackgroundColor '#000000' --splashBackgroundColorDark '#000000'
 
-      - name: Build the debug APK
+      # Pull the permanent signing key out of repo Secrets and write it to a
+      # temp file. RUNNER_TEMP is wiped when the job ends, so the key never
+      # lingers on the runner. KEYSTORE_BASE64 is the keystore file you made
+      # locally, base64-encoded.
+      - name: Decode the signing keystore
+        run: echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.keystore"
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      # assembleRelease (not Debug) so we get a release variant, and the
+      # android.injected.signing.* props tell Gradle to sign it with OUR key
+      # instead of the random debug one. This is the actual fix for the
+      # "signatures don't match, update blocked" problem.
+      - name: Build the release APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease \
+            -Pandroid.injected.signing.store.file="$RUNNER_TEMP/release.keystore" \
+            -Pandroid.injected.signing.store.password="$KEYSTORE_PASSWORD" \
+            -Pandroid.injected.signing.key.alias="$KEY_ALIAS" \
+            -Pandroid.injected.signing.key.password="$KEY_PASSWORD"
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Rename the APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk the-den.apk
+        run: cp android/app/build/outputs/apk/release/app-release.apk the-den.apk
 
       - name: Upload APK as an artifact
         if: github.event_name == 'workflow_dispatch'
