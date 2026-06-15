@@ -41,6 +41,13 @@ jobs:
       - name: Generate the Android project
         run: npx cap add android
 
+      - name: Set the app version
+        run: |
+          NAME="${GITHUB_REF_NAME#v}"
+          [ "$NAME" = "main" ] && NAME="0.0.${GITHUB_RUN_NUMBER}"
+          sed -i -E "s/versionCode [0-9]+/versionCode ${GITHUB_RUN_NUMBER}/" android/app/build.gradle
+          sed -i -E "s/versionName \"[^\"]*\"/versionName \"${NAME}\"/" android/app/build.gradle
+
       - name: Copy the web assets into it
         run: npx cap sync android
 
