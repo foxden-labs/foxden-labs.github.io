@@ -8844,14 +8844,24 @@ async function doExport(mode) {
                    mode === 'path'   ? `${state.story.slug}_path_${state.currentAddr}_${ts}.${ext}` :
                                        `${state.story.slug}_ALL_${ts}.${ext}`;
 
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(() => URL.revokeObjectURL(url), 100);
+  const filesystem = window.Capacitor?.Plugins?.Filesystem;
+  if (window.Capacitor?.isNativePlatform?.() && typeof filesystem?.writeFile === 'function') {
+    await filesystem.writeFile({
+      path: filename,
+      data: await blob.text(),
+      directory: 'DOCUMENTS',
+      encoding: 'utf8'
+    });
+  } else {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
+  }
 
   closeSheet();
   toast('Exported ' + filename);
