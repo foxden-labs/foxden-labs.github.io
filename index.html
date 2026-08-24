@@ -4207,6 +4207,17 @@ const $popupBox = $('#popup-box');
 const $toast = $('#toast');
 const $fileInput = $('#file-input');
 
+// Android's Storage Access Framework can't resolve a made-up ".cyoa"
+// extension to a MIME type, so it falls back to treating those files as
+// generic application/octet-stream data, and the strict accept filter
+// below then excludes them from the picker entirely. That's the "shows
+// up as .bin" bug. On the native app we drop the filter and accept
+// anything; browsers match extension-based accept strings reliably, so
+// the plain web version keeps the nicer, tighter filter.
+if (window.Capacitor?.isNativePlatform?.()) {
+  $fileInput.setAttribute('accept', '*/*');
+}
+
 function applyTheme(theme) {
   // Themes: 'fox-dark' (default — leave [data-theme] unset), 'warm', 'light'
   if (theme === 'fox-dark' || !theme) {
