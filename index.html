@@ -4206,6 +4206,11 @@ const $popupHost = $('#popup-host');
 const $popupBox = $('#popup-box');
 const $toast = $('#toast');
 const $fileInput = $('#file-input');
+// Set true right before opening the picker from the *story picker* screen,
+// so the change handler below knows to force a brand new story instead of
+// grafting into whatever story happened to still be loaded in memory. Left
+// false (default) for the in-story Import button, which should keep grafting.
+let importAsNewStory = false;
 
 // Android's Storage Access Framework can't resolve a made-up ".cyoa"
 // extension to a MIME type, so it falls back to treating those files as
@@ -4709,7 +4714,7 @@ async function showStoryPicker() {
       }, 'New story'),
       el('button', {
         class: 'btn',
-        onclick: () => $fileInput.click()
+        onclick: () => { importAsNewStory = true; $fileInput.click(); }
       }, 'Import .cyoa')
     )
   );
@@ -8886,7 +8891,9 @@ $fileInput.addEventListener('change', async (e) => {
   if (!file) return;
   const text = await file.text();
   $fileInput.value = '';
-  await handleImport(text, file.name);
+  const forceNew = importAsNewStory;
+  importAsNewStory = false;
+  await handleImport(text, file.name, forceNew);
 });
 
 /* ═════════════════════════════════════════════════════════════════
@@ -9018,8 +9025,8 @@ function rewriteWithTopMap(oAddr, numMap) {
   return numMap[oldNum] + oAddr.slice(oldNum.length);
 }
 
-async function handleImport(text, filename) {
-  const hadStory = !!state.story;  // are we importing into an already-open story?
+async function handleImport(text, filename, forceNewStory = false) {
+  const hadStory = !!state.story && !forceNewStory;  // are we importing into an already-open story?
   // Parse header
   const allLines = text.split(/\r?\n/);
   let exportRoot = null;
@@ -9030,8 +9037,10 @@ async function handleImport(text, filename) {
     if (line.startsWith('NODE|') || line.startsWith('OPTION|') || line.startsWith('GLOSS|')) break;
   }
 
-  // Need a story to import into. Create one if necessary.
-  if (!state.story) {
+  // Need a story to import into. Create one if necessary — also forced when
+  // the import was launched from the story picker (forceNewStory), even if
+  // some other story was still sitting loaded in memory from before.
+  if (!state.story || forceNewStory) {
     const newSlug = await createStory(storyTitle);
     await setStory(newSlug);
     state.currentAddr = '1A';
