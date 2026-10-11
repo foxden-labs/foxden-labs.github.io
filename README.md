@@ -112,7 +112,7 @@ There's nothing to install.
 
 ## Roadmap
 
-I have a lot of plans for this project since layering is incredibly easy. The code is built in a way that all new features can be slotted in with no issues. On the horizon: deeper interactive mechanics maybe, but mostly expanding on prose, in the spirit of actual CYOA books.
+I have a lot of plans for this project since layering is incredibly easy. The code is built in a way that all new features can be slotted in with no issues. On the horizon: deeper interactive mechanics maybe, but mostly expanding on prose, in the spirit of actual CYOA books. Additionally, keep in mind that it was built for easy editing and reuse. There are detailed instructions in the code for you to repurpose it as you wish, as long as you provide attribution and follow the license under which it was published.
 
 ## Contact
 
