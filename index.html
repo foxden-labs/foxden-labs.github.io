@@ -493,6 +493,25 @@ main.body {
   gap: 8px;
 }
 
+/* Word count line above the node text (reader). Follows the reading width
+   so it lines up with the text column. */
+.word-count {
+  flex-shrink: 0;
+  padding: 8px var(--pad) 0;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  max-width: var(--read-width, none);
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 /* Glossary inline link span */
 .gloss-link {
   color: var(--fox);
@@ -2178,6 +2197,10 @@ const DEFAULT_SETTINGS = {
   lastStory: null,
   shiftOn: false,
   showAuthor: true,
+  showWordCount: false,  // word count under the node text in the reader, and
+                         // per-story totals on the Stories screen. Off by
+                         // default. Nothing is stored beyond this flag; every
+                         // number is computed on the fly from node text.
   maxRating: 'H',
   spoilerMode: false,
   linksMode: false,
@@ -4062,6 +4085,90 @@ function plainText(raw) {
   }
 }
 
+/* ----- Word count -----
+   Everything here is derived on the fly from node text. Nothing is stored
+   and no schema is touched, so it works on every existing story as is.
+
+   countWords(raw): visible words in one node's text. Block-level [IMG:...]
+   lines are dropped first (the renderer pulls them out the same way, and
+   plainText() would otherwise leave the marker in as a fake word). Text that
+   contains no markup characters skips the parser, since the parser would hand
+   it back unchanged; anything with markup goes through plainText() so color,
+   bold, links, jumps, sizes and glyph blocks all reduce to their visible text. */
+const WORDCOUNT_MARKUP_RE = /[#*_{\[\\]|\(\(/;
+
+function countWords(raw) {
+  if (!raw) return 0;
+  const kept = [];
+  for (const line of String(raw).split('\n')) {
+    if (!IMG_TOKEN_RE.test(line)) kept.push(line);
+  }
+  let text = kept.join('\n');
+  if (!text.trim()) return 0;
+  if (WORDCOUNT_MARKUP_RE.test(text)) text = plainText(text);
+  const m = text.match(/\S+/g);
+  return m ? m.length : 0;
+}
+
+function formatWordCount(n) {
+  return n.toLocaleString() + (n === 1 ? ' word' : ' words');
+}
+
+const yieldToUI = () => new Promise(resolve => setTimeout(resolve, 0));
+
+/* Total words in one story. Opens that story's own DB through a separate
+   connection (never state.db), reads it in pages of 100 by primary key, and
+   closes it again. Parsing is time-sliced: after about 10 ms of work it yields
+   to the event loop so taps and scrolling stay responsive. isStale() is polled
+   between pages and slices so a count that nobody can see anymore stops early.
+   Returns the total, or null if it was cancelled or failed. */
+async function countStoryWords(slug, isStale) {
+  let db = null;
+  try {
+    db = openStoryDB(slug);
+    let total = 0;
+    let last = null;
+    for (;;) {
+      if (isStale()) return null;
+      const page = last === null
+        ? await db.nodes.orderBy('address').limit(100).toArray()
+        : await db.nodes.where('address').above(last).limit(100).toArray();
+      if (!page.length) break;
+      let sliceStart = performance.now();
+      for (const n of page) {
+        if (!n.emptied) total += countWords(n.text);
+        if (performance.now() - sliceStart > 10) {
+          await yieldToUI();
+          if (isStale()) return null;
+          sliceStart = performance.now();
+        }
+      }
+      last = page[page.length - 1].address;
+    }
+    return total;
+  } catch (e) {
+    return null;
+  } finally {
+    if (db) { try { db.close(); } catch (e) { /* already closed */ } }
+  }
+}
+
+/* Fills the placeholder in each Stories row, one story at a time, as each
+   finishes. `run` ties the work to one render of the Stories screen: opening a
+   story or re-rendering the screen bumps wordCountRun and every loop still
+   running for the old screen quietly stops. */
+let wordCountRun = 0;
+
+async function fillStoryWordCounts(entries, run) {
+  const stale = () => run !== wordCountRun;
+  for (const { slug, span } of entries) {
+    if (stale()) return;
+    const n = await countStoryWords(slug, () => stale() || !span.isConnected);
+    if (stale() || !span.isConnected) return;
+    span.textContent = n === null ? '' : ' · ' + formatWordCount(n);
+  }
+}
+
 /* ----- Choices: build, filter, shuffle, render ----- */
 
 /* A node is treated as "empty" if any of the following hold:
@@ -4662,18 +4769,28 @@ async function showOnboarding() {
 async function showStoryPicker() {
   const stories = await listStories();
 
+  // Each render of this screen gets its own run id, so any word count loop
+  // still working for a previous render stops on its own.
+  const countRun = ++wordCountRun;
+  const countEntries = [];
+
   const list = el('div', { class: 'picker-list' });
   if (stories.length === 0) {
     list.appendChild(el('div', { class: 'empty-state' }, 'No stories yet. Create one to begin.'));
   } else {
     for (const s of stories) {
+      // Placeholder dots now; the real number is filled in from the background.
+      const countSpan = state.settings.showWordCount
+        ? el('span', { class: 'row-words' }, ' \u00b7 \u00b7\u00b7\u00b7')
+        : null;
+      if (countSpan) countEntries.push({ slug: s.slug, span: countSpan });
       const row = el('button', {
         class: 'list-row',
         onclick: async () => { haptic(10); await openExistingStory(s.slug); }
       },
         el('div', { class: 'row-main' },
           el('div', { class: 'row-title' }, s.title),
-          el('div', { class: 'row-sub' }, s.slug)
+          el('div', { class: 'row-sub' }, s.slug, countSpan)
         ),
         el('div', { class: 'row-action' }, svg(ICON.fwd))
       );
@@ -4716,6 +4833,10 @@ async function showStoryPicker() {
 
   $app.innerHTML = '';
   $app.appendChild(screen);
+
+  // Screen is on display. Count in the background, without awaiting, so the
+  // screen stays fully usable while the dots resolve into numbers.
+  if (countEntries.length) fillStoryWordCounts(countEntries, countRun);
 }
 
 async function openExistingStory(slug) {
@@ -4942,6 +5063,11 @@ async function renderMain() {
     textZone.textContent = isEmptied
       ? '[ this node has been emptied — tap "Write here" to add new content ]'
       : '[ nothing written here yet ]';
+  }
+  // Word count line, directly under the header and above the text. Computed
+  // from node.text on every render, so it is current after any save.
+  if (exists && state.settings.showWordCount) {
+    card.appendChild(el('div', { class: 'word-count' }, formatWordCount(countWords(node.text))));
   }
   card.appendChild(textZone);
 
@@ -5939,6 +6065,11 @@ function openMenu() {
     await saveSetting('linksMode', !state.settings.linksMode);
     renderMain();
     toast('Links ' + (state.settings.linksMode ? 'on' : 'off'));
+  }));
+  body.appendChild(row('list', state.settings.showWordCount ? 'Word count: shown' : 'Word count: hidden', 'Under the text, and on the Stories screen', async () => {
+    await saveSetting('showWordCount', !state.settings.showWordCount);
+    renderMain();
+    toast('Word count ' + (state.settings.showWordCount ? 'shown' : 'hidden'));
   }));
   body.appendChild(row('shuffle', 'Reshuffle choices', 'Pick 3 fresh from the pool', () => {
     state.shuffleSeed++;
