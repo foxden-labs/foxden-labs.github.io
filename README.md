@@ -116,7 +116,7 @@ I have a lot of plans for this project since layering is incredibly easy. The co
 
 ## Contact
 
-For any feedback or feature requests, the contact email is visible on my Github page and in the file itself in the side menu.
+For any feedback or feature requests, the contact email is visible on my Github page and in the file itself in the side menu. For updates and changes, check the releases page.
 
 ## License
 
