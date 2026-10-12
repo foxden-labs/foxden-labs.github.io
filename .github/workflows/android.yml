@@ -56,6 +56,48 @@ jobs:
       - name: Generate app icons
         run: npx @capacitor/assets generate --android --iconBackgroundColor '#000000' --iconBackgroundColorDark '#000000' --splashBackgroundColor '#000000' --splashBackgroundColorDark '#000000'
 
+      # Capacitor regenerates the Android project on every run, so the bar
+      # colours have to be re-applied here each time. The window background is
+      # what shows behind transparent bars on Android 15+, and the contrast
+      # flags stop the system painting a grey scrim behind the nav bar. If the
+      # theme block is not found this only warns, so the build still succeeds.
+      - name: Make the system bars black
+        run: |
+          python3 - android/app/src/main/res/values/styles.xml <<'PY'
+          import re, sys
+          import xml.dom.minidom
+          path = sys.argv[1]
+          src = open(path, encoding='utf-8').read()
+          items = [
+              ('android:windowBackground', '@android:color/black'),
+              ('android:statusBarColor', '@android:color/black'),
+              ('android:navigationBarColor', '@android:color/black'),
+              ('android:windowLightStatusBar', 'false'),
+              ('android:windowLightNavigationBar', 'false'),
+              ('android:enforceStatusBarContrast', 'false'),
+              ('android:enforceNavigationBarContrast', 'false'),
+          ]
+          m = re.search(r'(<style\s+name="AppTheme\.NoActionBar"[^>]*>)(.*?)(</style>)', src, re.S)
+          if not m:
+              print('::warning::AppTheme.NoActionBar not found in styles.xml, system bars left as generated')
+              sys.exit(0)
+          body = m.group(2)
+          for name, _ in items:
+              body = re.sub(r'[ \t]*<item\s+name="%s"[^>]*>.*?</item>[ \t]*\n?' % re.escape(name), '', body)
+          body = body.rstrip() + '\n'
+          add = ''.join('        <item name="%s">%s</item>\n' % (n, v) for n, v in items)
+          out = src[:m.start(2)] + body + add + '    ' + src[m.end(2):]
+          try:
+              xml.dom.minidom.parseString(out.encode('utf-8'))
+          except Exception as e:
+              print('::warning::styles.xml patch produced invalid XML, left untouched: %s' % e)
+              sys.exit(0)
+          open(path, 'w', encoding='utf-8').write(out)
+          print('System bars patched.')
+          PY
+          echo "----- resulting styles.xml -----"
+          cat android/app/src/main/res/values/styles.xml
+
       # Pull the permanent signing key out of repo Secrets and write it to a
       # temp file. RUNNER_TEMP is wiped when the job ends, so the key never
       # lingers on the runner. KEYSTORE_BASE64 is the keystore file you made
