@@ -1632,6 +1632,28 @@ nav.nav {
   100% { filter: blur(0);     transform: translateY(0);    opacity: 1; }
 }
 
+/* Flashbang (light theme) only. The black Nixie squares clash with the paper
+   background, so the slots become white tiles with a thin warm border. Digits
+   stay fox orange but the glow is dialled down to a faint halo (a strong glow
+   just smudges on white), and the churn/overflow colours get darker variants
+   so they stay readable. Every other theme is untouched. The boot screen is
+   its own black overlay and keeps its dark slots. */
+[data-theme="light"] .diverge-slot {
+  background: var(--bg-card);
+  border-color: var(--line);
+  text-shadow: 0 0 6px rgba(249, 115, 22, 0.28);
+}
+[data-theme="light"] .diverge-slot.int { border-color: #e2c5a0; }
+[data-theme="light"] .diverge-slot.dot { background: transparent; border: none; color: var(--fox); text-shadow: none; }
+[data-theme="light"] .diverge-readout.overflow .diverge-slot:not(.int):not(.dot) {
+  color: #d1200f;
+  text-shadow: 0 0 6px rgba(255, 30, 12, 0.3);
+}
+[data-theme="light"] .diverge-readout.churn .diverge-slot:not(.int):not(.dot) {
+  color: #c47500;
+  text-shadow: 0 0 6px rgba(255, 150, 30, 0.35);
+}
+
 .section-head {
   font-family: var(--sans);
   font-size: 10px;
