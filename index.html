@@ -1456,6 +1456,30 @@ nav.nav {
   justify-content: flex-end;
 }
 
+/* Chapter export popup. The route line keeps a fixed minimum height so the
+   popup doesn't jump while the preview resolves. */
+.chapter-export { display: flex; flex-direction: column; gap: 12px; }
+.chapter-hint { font-size: 14px; color: var(--ink-soft); line-height: 1.5; }
+.chapter-input {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.chapter-input::placeholder { text-transform: none; letter-spacing: 0; }
+.chapter-route {
+  min-height: 38px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+.chapter-route.bad { color: var(--rate-h); }
+.chapter-route.ok .chapter-chain { color: var(--fox); word-break: break-word; }
+.chapter-route.ok .chapter-stats { color: var(--ink-dim); }
+.chapter-route.ok { animation: chapterIn 180ms var(--ease); }
+@keyframes chapterIn { from { opacity: 0; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+.chapter-export .btn.primary:disabled { opacity: 0.35; pointer-events: none; }
+
 /* Toast */
 .toast {
   position: fixed;
@@ -8782,6 +8806,17 @@ function openExportSheet() {
     el('div', { class: 'row-action' }, svg(ICON.download))
   ));
 
+  body.appendChild(el('button', {
+    class: 'list-row',
+    onclick: () => openChapterExport()
+  },
+    el('div', { class: 'row-main' },
+      el('div', { class: 'row-title' }, 'Export chapter'),
+      el('div', { class: 'row-sub' }, 'from ' + state.currentAddr + ' forward to a node you pick, as .txt')
+    ),
+    el('div', { class: 'row-action' }, svg(ICON.download))
+  ));
+
   openSheet('Export', body);
 }
 
@@ -8882,12 +8917,154 @@ function addrHasDescendantIn(addr, nodeAddrs) {
   return false;
 }
 
-async function doExport(mode) {
+/* ----- Chapter export (forward path) -----
+   "Export path" walks backward from the current node to the root. A chapter is
+   the same walk started at the TARGET instead, stopped when it reaches the
+   current node, then flipped to read forward. Every node has exactly one
+   history (no merging), so there is exactly one road and nothing to search.
+
+   The walk is structural, like addrIsUnder: prevStepAddr within a segment,
+   branchParentAddr at a segment boundary. Addresses that don't exist (gaps)
+   are stepped over rather than ending the walk; only existing nodes go in. */
+const CHAPTER_ADDR_RE = /^([0-9]+[A-Z]+)+$/;
+
+async function chapterPath(from, to) {
+  if (!CHAPTER_ADDR_RE.test(to)) return { ok: false, reason: 'Not a valid address' };
+  if (!(await nodeExists(from))) return { ok: false, reason: from + ' is unwritten, nothing to start from' };
+  if (!(await nodeExists(to))) return { ok: false, reason: to + ' does not exist' };
+  const path = [];
+  let cursor = to;
+  for (let guard = 0; cursor && guard < 100000; guard++) {
+    if (cursor === from) {
+      path.push(cursor);
+      return { ok: true, path: path.reverse() };
+    }
+    if (await nodeExists(cursor)) path.push(cursor);
+    const up = prevStepAddr(cursor) || branchParentAddr(cursor);
+    if (!up || up === cursor) break;
+    cursor = up;
+  }
+  // Reached the root without passing `from`.
+  if (addrIsUnder(from, to)) return { ok: false, reason: to + ' is behind ' + from };
+  return { ok: false, reason: to + ' is not ahead of ' + from };
+}
+
+/* Plain text for one node in a .txt export. Image lines become a readable
+   [image: label] placeholder; everything else goes through plainText() in
+   blocks so markup reduces to visible text. */
+function chapterNodeText(raw) {
+  const out = [];
+  let block = [];
+  const flush = () => {
+    if (block.length) { out.push(plainText(block.join('\n'))); block = []; }
+  };
+  for (const line of String(raw || '').split('\n')) {
+    const m = line.match(IMG_TOKEN_RE);
+    if (m) { flush(); out.push('[image: ' + (m[2] || 'untitled') + ']'); }
+    else block.push(line);
+  }
+  flush();
+  return out.join('\n');
+}
+
+function chapterChainText(path) {
+  if (path.length <= 5) return path.join(' \u2192 ');
+  return [path[0], path[1], '\u2026', path[path.length - 2], path[path.length - 1]].join(' \u2192 ');
+}
+
+function openChapterExport() {
+  const from = state.currentAddr;
+  const wrap = el('div', { class: 'chapter-export' });
+  wrap.appendChild(el('div', { class: 'chapter-hint' },
+    'Exports forward from ' + from + ' to the address you type. Branches are fine, as long as the target is ahead of you.'));
+
+  const input = el('input', {
+    class: 'popup-input chapter-input',
+    type: 'text',
+    placeholder: 'Destination, e.g. ' + (nextStepAddr(from) || '1B'),
+    autocapitalize: 'characters',
+    autocomplete: 'off',
+    autocorrect: 'off',
+    spellcheck: 'false',
+    enterkeyhint: 'go'
+  });
+  const route = el('div', { class: 'chapter-route' }, '\u00a0');
+  const exportBtn = el('button', { class: 'btn primary' }, 'Export');
+  exportBtn.disabled = true;
+
+  let seq = 0;
+  let timer = null;
+  let ready = null;
+
+  const evaluate = async () => {
+    const my = ++seq;
+    const to = input.value.toUpperCase().replace(/\s+/g, '');
+    ready = null;
+    exportBtn.disabled = true;
+    if (!to) {
+      route.className = 'chapter-route';
+      route.textContent = '\u00a0';
+      return;
+    }
+    const res = await chapterPath(from, to);
+    if (my !== seq) return;
+    if (!res.ok) {
+      route.className = 'chapter-route bad';
+      route.textContent = res.reason;
+      return;
+    }
+    let words = 0;
+    for (const a of res.path) {
+      const n = await getNode(a);
+      if (n && !n.emptied) words += countWords(n.text);
+    }
+    if (my !== seq) return;
+    route.className = 'chapter-route';
+    void route.offsetWidth; // restart the fade-in on every fresh result
+    route.className = 'chapter-route ok';
+    route.replaceChildren(
+      el('div', { class: 'chapter-chain' }, chapterChainText(res.path)),
+      el('div', { class: 'chapter-stats' },
+        res.path.length + (res.path.length === 1 ? ' node' : ' nodes') + ' \u00b7 ' + formatWordCount(words))
+    );
+    ready = { to, path: res.path };
+    exportBtn.disabled = false;
+  };
+
+  const go = async () => {
+    if (!ready) return;
+    const job = ready;
+    resolvePopup(null);
+    await doExport('chapter', { from, to: job.to, path: job.path });
+  };
+
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(evaluate, 120);
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); go(); }
+  });
+  exportBtn.addEventListener('click', go);
+
+  wrap.appendChild(input);
+  wrap.appendChild(route);
+  wrap.appendChild(el('div', { class: 'popup-actions' },
+    el('button', { class: 'btn ghost', onclick: () => resolvePopup(null) }, 'Cancel'),
+    exportBtn
+  ));
+
+  showPopup('Export chapter', wrap, { noActions: true });
+  setTimeout(() => input.focus(), 100);
+}
+
+async function doExport(mode, opts = {}) {
   // Guarantee clean output: drop any image blobs no node references before we
   // serialize, so a shared file never carries dead images.
-  if (mode !== 'path') { try { await sweepOrphanImages(); } catch (e) {} }
   const isPath = mode === 'path';
-  const ext = isPath ? 'txt' : 'cyoa';
+  const isTxt = isPath || mode === 'chapter';
+  if (!isTxt) { try { await sweepOrphanImages(); } catch (e) {} }
+  const ext = isTxt ? 'txt' : 'cyoa';
   const lines = [];
 
   if (mode === 'branch') {
@@ -8967,19 +9144,18 @@ async function doExport(mode) {
     // the export-time orphan sweep, so a shared file never carries dead images.
     for (const line of await imageExportLines(collectImageIds(allNodes.map(n => n.text)))) lines.push(line);
   } else if (mode === 'path') {
-    // Walk backward
-    const path = [];
+    // Walk backward, structurally (same as chapterPath and addrIsUnder):
+    // prevStepAddr within a segment, branchParentAddr at a segment boundary.
+    // Missing addresses (gaps) are stepped over instead of ending the walk,
+    // so a gap no longer cuts off everything before it. The current node is
+    // always the first entry, as before, even if it is unwritten.
+    const path = [state.currentAddr];
     let cursor = state.currentAddr;
-    while (cursor) {
-      path.push(cursor);
-      const prv = prevStepAddr(cursor);
-      if (prv && await nodeExists(prv)) {
-        cursor = prv;
-      } else {
-        const par = branchParentAddr(cursor);
-        if (par && await nodeExists(par)) cursor = par;
-        else cursor = '';
-      }
+    for (let guard = 0; cursor && guard < 100000; guard++) {
+      const up = prevStepAddr(cursor) || branchParentAddr(cursor);
+      if (!up || up === cursor) break;
+      cursor = up;
+      if (await nodeExists(cursor)) path.push(cursor);
     }
     path.reverse();
 
@@ -9000,12 +9176,42 @@ async function doExport(mode) {
       lines.push('-----');
       lines.push('');
     }
+  } else if (mode === 'chapter') {
+    // Path was resolved (and validated) by the chapter popup; same layout as
+    // "Export path" so both kinds of .txt read the same.
+    const path = opts.path || [];
+    let words = 0;
+    const nodes = [];
+    for (const a of path) {
+      const n = await getNode(a);
+      nodes.push(n);
+      if (n && !n.emptied) words += countWords(n.text);
+    }
+
+    lines.push('# ' + state.story.title);
+    lines.push('# Chapter from ' + opts.from + ' to ' + opts.to);
+    lines.push('# ' + path.length + (path.length === 1 ? ' node, ' : ' nodes, ') + formatWordCount(words) + ', exported ' + new Date().toLocaleString());
+    lines.push('# ---');
+    lines.push('');
+
+    for (let i = 0; i < path.length; i++) {
+      const a = path[i];
+      const n = nodes[i];
+      const r = await getRating(a);
+      lines.push(`[${a}]  rating: ${r}` + (n && n.author ? `  by: ${n.author}` : ''));
+      lines.push('');
+      lines.push(isNodeEmpty(n) ? (n && n.emptied ? '[ emptied ]' : '[ nothing written here ]') : chapterNodeText(n.text));
+      lines.push('');
+      lines.push('-----');
+      lines.push('');
+    }
   }
 
   const blob = new Blob([lines.join('\n')], { type: 'application/octet-stream' });
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   const filename = mode === 'branch' ? `${state.story.slug}_${state.currentAddr}_${ts}.${ext}` :
                    mode === 'path'   ? `${state.story.slug}_path_${state.currentAddr}_${ts}.${ext}` :
+                   mode === 'chapter' ? `${state.story.slug}_chapter_${opts.from}-${opts.to}_${ts}.${ext}` :
                                        `${state.story.slug}_ALL_${ts}.${ext}`;
 
   const filesystem = window.Capacitor?.Plugins?.Filesystem;
