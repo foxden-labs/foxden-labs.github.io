@@ -4693,15 +4693,18 @@ function applyScales() {
 }
 
 /* Haptics. In the packaged app, Android's WebView ignores navigator.vibrate,
-   so we go through Capacitor's native Haptics plugin instead and map the old
-   buzz lengths onto proper impact strengths: light for taps, medium for saves,
-   heavy for long-presses and imports. In a browser it falls back to
-   navigator.vibrate, which Chrome honors and Firefox quietly ignores. */
+   so we go through Capacitor's native Haptics plugin instead. We use its plain
+   vibrate(duration), NOT impact(): impact() plays waveforms at reduced
+   amplitudes (LIGHT 110, MEDIUM 180 out of 255) that many phones, Samsung
+   included, scale down to nothing, so only HEAVY ever registered. vibrate()
+   is a one-shot at the device's default amplitude, the same thing Chrome does
+   for navigator.vibrate, so the APK feels identical to the browser. In a
+   browser it falls back to navigator.vibrate, which Chrome honors and Firefox
+   quietly ignores. */
 function haptic(ms = 10) {
   const H = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;
   if (H && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
-    const style = ms >= 20 ? 'HEAVY' : ms >= 12 ? 'MEDIUM' : 'LIGHT';
-    try { H.impact({ style }).catch(() => {}); } catch (e) {}
+    try { H.vibrate({ duration: ms }).catch(() => {}); } catch (e) {}
     return;
   }
   if (navigator.vibrate) navigator.vibrate(ms);
