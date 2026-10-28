@@ -2162,6 +2162,236 @@ nav.nav {
 @media (prefers-reduced-motion: reduce) {
   .inspire-card { animation: none; opacity: 1; transform: none; }
 }
+
+/* ---- Writing stats ---- */
+/* Chart button on the Stories header, mirroring the crest on the left. The
+   transform repeats the crest's nudge; the :active rule keeps it while the
+   icon-btn press scale applies, or the button would jump on tap. */
+.picker-stats {
+  position: absolute;
+  right: var(--pad);
+  top: 50%;
+  transform: translateY(calc(-50% + 5px));
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--line);
+  background: var(--bg-raised);
+}
+.picker-stats:active { transform: translateY(calc(-50% + 5px)) scale(0.92); }
+.picker-stats svg { width: 24px; height: 24px; stroke-width: 2; }
+.picker-today {
+  display: block;
+  margin-top: 4px;
+  color: var(--fox);
+  cursor: pointer;
+  animation: chapterIn 240ms var(--ease) both;
+}
+.picker-today.neg { color: var(--rate-h); }
+
+.stats { padding-bottom: 14px; }
+.stats-readout { text-align: center; padding: 2px var(--pad) 16px; }
+.stats-label {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 8px;
+}
+.stats-big {
+  font-family: var(--mono);
+  font-size: calc(42px * var(--ui-scale));
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--ink-dim);
+  font-variant-numeric: tabular-nums;
+  transition: color 200ms var(--ease), text-shadow 200ms var(--ease);
+}
+.stats-big.pos { color: var(--fox); text-shadow: 0 0 18px rgba(249, 115, 22, 0.28); }
+.stats-big.neg { color: var(--rate-h); text-shadow: 0 0 18px rgba(214, 85, 64, 0.22); }
+.stats-break {
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: 0.3px;
+  color: var(--ink-soft);
+  margin-top: 8px;
+}
+.stats-vs {
+  min-height: 14px;
+  margin-top: 6px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.stats-vs.up { color: var(--fox); }
+.stats-vs.down { color: var(--rate-h); }
+.stats-who { max-width: 300px; margin: 10px auto 0; }
+.stats-who:empty { display: none; }
+.stats-who-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-top: 1px solid var(--line-soft);
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--ink-soft);
+  text-align: left;
+}
+.stats-who-row span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stats-who-row .pos, .stats-who-row .neg { flex-shrink: 0; font-family: var(--mono); }
+.stats-who-row .pos { color: var(--fox); }
+.stats-who-row .neg { color: var(--rate-h); }
+.stats-who-more { padding-top: 4px; font-family: var(--sans); font-size: 11px; color: var(--ink-dim); }
+
+.stats-nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px var(--pad) 6px;
+  border-top: 1px solid var(--line-soft);
+}
+.stats-range {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.stats-range small {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  text-transform: none;
+  color: var(--ink-dim);
+}
+.stats-page {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  color: var(--ink-soft);
+  border: 1px solid var(--line);
+  transition: color 120ms var(--ease), transform 80ms var(--ease), opacity 120ms var(--ease);
+}
+.stats-page:active:not(:disabled) { transform: scale(0.92); color: var(--fox); }
+.stats-page:disabled { opacity: 0.25; cursor: default; }
+.stats-page svg { width: 18px; height: 18px; }
+
+.stats-chart { padding: 8px var(--pad) 0; overflow: hidden; touch-action: pan-y; }
+.stats-inner.enter-fwd  { animation: slideInRight var(--speed) var(--ease) both; }
+.stats-inner.enter-back { animation: slideInLeft  var(--speed) var(--ease) both; }
+.stats-plot { position: relative; }
+.stats-zero { position: absolute; left: 0; right: 0; height: 1px; background: var(--line); }
+.stats-goal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  border-top: 1px dashed var(--fox-soft);
+  pointer-events: none;
+}
+.stats-goal span {
+  position: absolute;
+  right: 0;
+  top: -14px;
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--fox);
+  opacity: 0.8;
+}
+.stats-cols { position: absolute; inset: 0; display: flex; gap: 6px; }
+.stats-col { position: relative; flex: 1; padding: 0; cursor: pointer; }
+.stats-col::before {
+  content: '';
+  position: absolute;
+  inset: 0 -3px;
+  background: var(--bg-elev);
+  opacity: 0;
+  transition: opacity 160ms var(--ease);
+}
+.stats-col.sel::before { opacity: 1; }
+.stats-col.future { cursor: default; }
+.stats-bar {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  transform-origin: bottom;
+  animation: statsGrow 460ms var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 38ms);
+  transition: opacity 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+.stats-bar.up   { background: var(--fox); }
+.stats-bar.down { background: var(--rate-h); transform-origin: top; }
+.stats-col:not(.sel) .stats-bar { opacity: 0.7; }
+.stats-col.sel .stats-bar.up   { box-shadow: 0 0 12px rgba(249, 115, 22, 0.45); }
+.stats-col.sel .stats-bar.down { box-shadow: 0 0 12px rgba(214, 85, 64, 0.4); }
+.stats-dot {
+  position: absolute;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin: -2px 0 0 -2px;
+  border-radius: 50%;
+  background: var(--ink-dim);
+  opacity: 0.6;
+}
+@keyframes statsGrow { from { transform: scaleY(0); } }
+.stats-days { display: flex; gap: 6px; padding-top: 8px; }
+.stats-dlabel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.stats-dlabel span:last-child { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); }
+.stats-dlabel.sel span:last-child { color: var(--ink); }
+.stats-dlabel.today span,
+.stats-dlabel.today span:last-child { color: var(--fox); }
+.stats-dlabel.future { opacity: 0.35; }
+.stats-hint {
+  padding: 12px var(--pad) 0;
+  text-align: center;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--ink-dim);
+}
+.stats-foot { margin-top: 16px; border-top: 1px solid var(--line-soft); }
+.stats-progress { height: 3px; margin-top: 8px; background: var(--line-soft); overflow: hidden; }
+.stats-progress > div {
+  height: 100%;
+  background: var(--fox);
+  transform-origin: left;
+  animation: statsFill 600ms var(--ease) both;
+}
+.stats-progress.done > div { box-shadow: 0 0 8px var(--fox); }
+@keyframes statsFill { from { transform: scaleX(0); } }
+.settings-row .value.stats-streak-on { color: var(--fox); font-family: var(--mono); }
+.stats-sub {
+  margin-top: 4px;
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  color: var(--ink-dim);
+}
+@media (prefers-reduced-motion: reduce) {
+  .stats-bar, .stats-inner, .stats-progress > div, .picker-today { animation: none; }
+}
 </style>
 </head>
 <body>
@@ -2266,7 +2496,9 @@ const DEFAULT_SETTINGS = {
   inspirePool: [],   // personal prompt deck for the Inspire tool. Global (shared
                      // across all stories), persisted in registry.settings, and
                      // deliberately NOT bundled into .cyoa exports.
-  inspireCount: 3    // last-used number of cards to draw
+  inspireCount: 3,   // last-used number of cards to draw
+  dailyGoal: 0       // writing stats daily word goal (words added). 0 = off.
+                     // Global, one goal for all stories.
 };
 
 /* ----- Global state ----- */
@@ -2330,6 +2562,53 @@ registry.version(1).stores({
   stories:  'slug, title, created',
   settings: 'key'   // {key, value}
 });
+// v2: writing stats. One row per story per local day, holding the words
+// added and removed on that day. Lives in the registry (not the story DBs)
+// so the global view is a single query, and so stats never ride along in
+// .cyoa exports. Existing installs just gain an empty table.
+registry.version(2).stores({
+  stories:  'slug, title, created',
+  settings: 'key',
+  stats:    '[slug+day], slug, day'   // {slug, day:'YYYY-MM-DD', added, removed}
+});
+
+/* ----- Writing stats: recording -----
+   Only real writing counts. The writer's Save diffs the node's old word count
+   against the new one, and emptying a node counts its words as removed.
+   Imports, tutorial loads and full-story erases go around these hooks, so
+   they never show up as writing. Nothing runs per keystroke: one small
+   registry read and write per save, and that's it. */
+
+function statsDay(d = new Date()) {
+  // Local calendar day, so a late-night session counts as that night.
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+async function statsAdd(added, removed, slug) {
+  slug = slug || (state.story && state.story.slug);
+  if (!slug || (!added && !removed)) return;
+  const day = statsDay();
+  try {
+    await registry.transaction('rw', registry.stats, async () => {
+      const row = await registry.stats.get([slug, day]);
+      if (row) {
+        row.added = (row.added || 0) + added;
+        row.removed = (row.removed || 0) + removed;
+        await registry.stats.put(row);
+      } else {
+        await registry.stats.put({ slug, day, added, removed });
+      }
+    });
+  } catch (e) { /* stats are best effort; never block a save */ }
+}
+
+async function statsRecordDiff(oldText, newText) {
+  const diff = countWords(newText) - countWords(oldText);
+  if (diff > 0) await statsAdd(diff, 0);
+  else if (diff < 0) await statsAdd(0, -diff);
+}
 
 /* ----- Settings I/O ----- */
 
@@ -2385,6 +2664,8 @@ async function createStory(title) {
 
 async function deleteStory(slug) {
   await registry.stories.delete(slug);
+  // Its stats go with it, so a future story that reuses the slug starts clean.
+  await registry.stats.where('slug').equals(slug).delete().catch(() => {});
   await Dexie.delete(`cyoa_${slug}`);
 }
 
@@ -3089,10 +3370,12 @@ async function emptyNode(addr) {
   if (!state.db) return;
   const node = await state.db.nodes.get(addr);
   if (!node) return;
+  const lost = node.emptied ? 0 : countWords(node.text);
   node.text = '';
   node.subtitle = '';
   node.emptied = true;
   await state.db.nodes.put(node);
+  await statsAdd(0, lost);   // emptying counts as words removed
 }
 
 /* Empty a node and everything downstream of it — continuations AND branches,
@@ -3104,12 +3387,15 @@ async function emptyNodeAndDescendants(root) {
   if (!state.db) return 0;
   const all = await state.db.nodes.toArray();
   const targets = all.filter(n => addrIsUnder(n.address, root) && !n.emptied && (n.text || '').trim());
+  let lost = 0;
   for (const n of targets) {
+    lost += countWords(n.text);
     n.text = '';
     n.subtitle = '';
     n.emptied = true;
     await state.db.nodes.put(n);
   }
+  await statsAdd(0, lost);   // one stats write for the whole sweep
   // Mass-emptying can orphan images those nodes referenced.
   await sweepOrphanImages();
   return targets.length;
@@ -4406,7 +4692,18 @@ function applyScales() {
   }
 }
 
+/* Haptics. In the packaged app, Android's WebView ignores navigator.vibrate,
+   so we go through Capacitor's native Haptics plugin instead and map the old
+   buzz lengths onto proper impact strengths: light for taps, medium for saves,
+   heavy for long-presses and imports. In a browser it falls back to
+   navigator.vibrate, which Chrome honors and Firefox quietly ignores. */
 function haptic(ms = 10) {
+  const H = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Haptics;
+  if (H && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+    const style = ms >= 20 ? 'HEAVY' : ms >= 12 ? 'MEDIUM' : 'LIGHT';
+    try { H.impact({ style }).catch(() => {}); } catch (e) {}
+    return;
+  }
   if (navigator.vibrate) navigator.vibrate(ms);
 }
 
@@ -4463,6 +4760,7 @@ const ICON = {
   upload:  '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
   settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   zap:     '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  chart:   '<line x1="2" y1="14" x2="22" y2="14"/><rect x="4.5" y="8" width="3.5" height="6" fill="currentColor" stroke="none"/><rect x="10.25" y="3.5" width="3.5" height="10.5" fill="currentColor" stroke="none"/><rect x="16" y="14" width="3.5" height="5.5" fill="currentColor" stroke="none"/>',
   bulb:    '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/>',
   user:    '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   book:    '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
@@ -4844,13 +5142,27 @@ async function showStoryPicker() {
     }
   }
 
+  // Writing stats: chart button opposite the crest, plus a "+N today" teaser
+  // on the subtitle that only shows up once today actually has a number.
+  const pickerSub = el('div', { class: 'picker-subtitle' }, stories.length + ' on this device');
+  const statsBtn = iconBtn('chart', 'Writing stats', () => { haptic(8); openStatsSheet(null); });
+  statsBtn.classList.add('picker-stats');
+  statsTodayNet().then((net) => {
+    if (!net || !pickerSub.isConnected) return;
+    pickerSub.appendChild(el('span', {
+      class: 'picker-today' + (net < 0 ? ' neg' : ''),
+      onclick: () => { haptic(8); openStatsSheet(null); }
+    }, statsSigned(net) + ' today'));
+  });
+
   const screen = el('div', { class: 'picker-screen' },
     el('div', { class: 'picker-head' },
       el('img', { class: 'picker-crest', src: ASSET_CREST, alt: 'The Den' }),
       el('div', { class: 'picker-head-text' },
         el('div', { class: 'picker-title' }, 'Stories'),
-        el('div', { class: 'picker-subtitle' }, stories.length + ' on this device')
-      )
+        pickerSub
+      ),
+      statsBtn
     ),
     list,
     el('div', { class: 'picker-foot' },
@@ -6039,6 +6351,410 @@ function openInspireSheet() {
   }
 }
 
+/* ----- Writing stats: the sheet -----
+   One sheet, two scopes. openStatsSheet(slug) shows a single story; passing
+   null shows every story added together (opened from the Stories screen).
+
+   The chart is a diverging bar chart, one week per page, Monday first. Each
+   bar is a day's net (added minus removed): orange above the zero line for a
+   day the story grew, red below it for a day you cut more than you wrote.
+   The scale adapts per page, so the zero line slides to wherever it leaves
+   the most room. Tap a bar to read that day; swipe or use the arrows to page.
+
+   Everything is plain divs and the app's own three font stacks. The data is
+   read once when the sheet opens; nothing here writes except the goal. */
+
+const STATS_WEEK_MS = 7 * 86400000;
+const STATS_CHART_H = 160;
+
+function statsSigned(n) {
+  if (n > 0) return '+' + n.toLocaleString();
+  if (n < 0) return '−' + Math.abs(n).toLocaleString();
+  return '0';
+}
+
+function statsParseDay(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function statsShiftDay(date, n) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+function statsMonday(date) {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return d;
+}
+
+/* Net words for today across every story, for the Stories screen teaser. */
+async function statsTodayNet() {
+  try {
+    const rows = await registry.stats.where('day').equals(statsDay()).toArray();
+    return rows.reduce((t, r) => t + (r.added || 0) - (r.removed || 0), 0);
+  } catch (e) {
+    return 0;
+  }
+}
+
+async function openStatsSheet(slug) {
+  const isGlobal = !slug;
+
+  let rows = [];
+  try {
+    rows = isGlobal
+      ? await registry.stats.toArray()
+      : await registry.stats.where('slug').equals(slug).toArray();
+  } catch (e) { rows = []; }
+
+  const titles = {};
+  if (isGlobal) {
+    for (const s of await listStories()) titles[s.slug] = s.title;
+  }
+
+  // Fold rows into one entry per day. In the global view a day also keeps a
+  // per-story split, so tapping it can say which stories moved.
+  const byDay = new Map();
+  let earliest = null;
+  for (const r of rows) {
+    const a = r.added || 0, rm = r.removed || 0;
+    if (!a && !rm) continue;
+    let d = byDay.get(r.day);
+    if (!d) { d = { added: 0, removed: 0, per: new Map() }; byDay.set(r.day, d); }
+    d.added += a;
+    d.removed += rm;
+    d.per.set(r.slug, (d.per.get(r.slug) || 0) + a - rm);
+    if (!earliest || r.day < earliest) earliest = r.day;
+  }
+  const netOf = (key) => { const d = byDay.get(key); return d ? d.added - d.removed : 0; };
+
+  const today = new Date();
+  const todayKey = statsDay(today);
+  const yesterdayKey = statsDay(statsShiftDay(today, -1));
+  const thisMonday = statsMonday(today);
+  // How many weeks back the oldest data sits. Paging stops there.
+  const maxBack = earliest
+    ? Math.max(0, Math.round((thisMonday - statsMonday(statsParseDay(earliest))) / STATS_WEEK_MS))
+    : 0;
+
+  let page = 0;            // weeks back from this week
+  let selected = todayKey;
+  let shownNet = 0;        // what the big number currently reads, for the tween
+  let tweenRaf = 0;
+  let alive = true;
+  let swiped = false;
+
+  const weekDays = (p) => {
+    const mon = statsShiftDay(thisMonday, -7 * p);
+    return Array.from({ length: 7 }, (_, i) => statsDay(statsShiftDay(mon, i)));
+  };
+  const weekNet = (p) => weekDays(p).reduce((t, k) => t + netOf(k), 0);
+  const shortDate = (key) => statsParseDay(key).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+  /* ── Skeleton ── */
+  const body = el('div', { class: 'stats' });
+
+  const rLabel = el('div', { class: 'stats-label' });
+  const rBig = el('div', { class: 'stats-big' }, '0');
+  const rBreak = el('div', { class: 'stats-break' });
+  const rVs = el('div', { class: 'stats-vs' });
+  const rWho = el('div', { class: 'stats-who' });
+  body.appendChild(el('div', { class: 'stats-readout' }, rLabel, rBig, rBreak, rVs, rWho));
+
+  const prevBtn = el('button', { class: 'stats-page', 'aria-label': 'Previous week', onclick: () => goPage(page + 1) }, svg(ICON.back));
+  const nextBtn = el('button', { class: 'stats-page', 'aria-label': 'Next week', onclick: () => goPage(page - 1) }, svg(ICON.fwd));
+  const rangeMain = el('div', {});
+  const rangeSub = el('small', {});
+  body.appendChild(el('div', { class: 'stats-nav' },
+    prevBtn,
+    el('div', { class: 'stats-range' }, rangeMain, rangeSub),
+    nextBtn
+  ));
+
+  const chart = el('div', { class: 'stats-chart' });
+  body.appendChild(chart);
+
+  if (byDay.size === 0) {
+    body.appendChild(el('div', { class: 'stats-hint' },
+      'Tracking starts now. Every save from here on counts.'));
+  }
+
+  const foot = el('div', { class: 'stats-foot' });
+  body.appendChild(foot);
+
+  // Total words, counted live from the nodes (same counter as the Stories
+  // screen). Built once, outside renderFoot, so a goal change doesn't restart it.
+  const totalSpan = el('span', {}, '···');
+  body.appendChild(el('div', { class: 'settings-row' },
+    el('div', { class: 'label' }, isGlobal ? 'Words across all stories' : 'Words in this story'),
+    el('div', { class: 'value' }, totalSpan)
+  ));
+
+  /* ── Big number: quick count toward the new value ── */
+  function tweenTo(to) {
+    cancelAnimationFrame(tweenRaf);
+    const from = shownNet;
+    shownNet = to;
+    if (from === to || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      rBig.textContent = statsSigned(to);
+      return;
+    }
+    const t0 = performance.now(), D = 340;
+    const step = (t) => {
+      if (!alive) return;
+      const k = Math.min(1, (t - t0) / D);
+      const e = 1 - Math.pow(1 - k, 3);
+      rBig.textContent = statsSigned(Math.round(from + (to - from) * e));
+      if (k < 1) tweenRaf = requestAnimationFrame(step);
+    };
+    tweenRaf = requestAnimationFrame(step);
+  }
+
+  function renderReadout() {
+    const key = selected;
+    const d = byDay.get(key);
+    const n = netOf(key);
+
+    rLabel.textContent = key === todayKey ? 'Today'
+      : key === yesterdayKey ? 'Yesterday'
+      : statsParseDay(key).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    rBig.className = 'stats-big' + (n > 0 ? ' pos' : n < 0 ? ' neg' : '');
+    tweenTo(n);
+
+    rBreak.textContent = d
+      ? '+' + d.added.toLocaleString() + ' added · −' + d.removed.toLocaleString() + ' removed'
+      : 'Nothing written';
+
+    const prevKey = statsDay(statsShiftDay(statsParseDay(key), -1));
+    const prev = netOf(prevKey);
+    const diff = n - prev;
+    rVs.className = 'stats-vs' + (diff > 0 ? ' up' : diff < 0 ? ' down' : '');
+    if (!d && !byDay.has(prevKey)) rVs.textContent = '';
+    else if (diff > 0) rVs.textContent = '▲ ' + diff.toLocaleString() + ' vs previous day';
+    else if (diff < 0) rVs.textContent = '▼ ' + Math.abs(diff).toLocaleString() + ' vs previous day';
+    else rVs.textContent = 'Same as previous day';
+
+    // Global view: which stories made up the day, biggest movers first.
+    rWho.replaceChildren();
+    if (isGlobal && d) {
+      const movers = [...d.per.entries()]
+        .filter(([, v]) => v)
+        .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]));
+      for (const [s, v] of movers.slice(0, 4)) {
+        rWho.appendChild(el('div', { class: 'stats-who-row' },
+          el('span', {}, titles[s] || s),
+          el('span', { class: v < 0 ? 'neg' : 'pos' }, statsSigned(v))
+        ));
+      }
+      if (movers.length > 4) {
+        rWho.appendChild(el('div', { class: 'stats-who-more' }, 'and ' + (movers.length - 4) + ' more'));
+      }
+    }
+  }
+
+  function markSelected() {
+    chart.querySelectorAll('[data-day]').forEach((node) => {
+      node.classList.toggle('sel', node.dataset.day === selected);
+    });
+  }
+
+  function select(key) {
+    if (key === selected) return;
+    selected = key;
+    markSelected();
+    renderReadout();
+  }
+
+  function renderChart(dir) {
+    const days = weekDays(page);
+    const nets = days.map(netOf);
+    const goal = state.settings.dailyGoal || 0;
+
+    // Scale per page. The goal counts toward the top so its line stays on
+    // screen; the zero line sits wherever the up/down split puts it.
+    let posMax = Math.max(0, ...nets);
+    const negMax = Math.max(0, ...nets.map((n) => -n));
+    if (goal > posMax) posMax = goal;
+    const PAD = 8;
+    const usable = STATS_CHART_H - PAD * 2;
+    const span = posMax + negMax;
+    const zeroY = span ? PAD + usable * (posMax / span) : PAD + usable;
+    const scale = span ? usable / span : 0;
+
+    const inner = el('div', { class: 'stats-inner' + (dir ? ' enter-' + dir : '') });
+    const plot = el('div', { class: 'stats-plot', style: 'height:' + STATS_CHART_H + 'px' });
+    plot.appendChild(el('div', { class: 'stats-zero', style: 'top:' + zeroY + 'px' }));
+    if (goal) {
+      plot.appendChild(el('div', { class: 'stats-goal', style: 'top:' + (zeroY - goal * scale) + 'px' },
+        el('span', {}, 'goal ' + goal.toLocaleString())));
+    }
+
+    const cols = el('div', { class: 'stats-cols' });
+    const labels = el('div', { class: 'stats-days' });
+    days.forEach((key, i) => {
+      const future = key > todayKey;
+      const n = nets[i];
+      const col = el('button', {
+        class: 'stats-col' + (future ? ' future' : '') + (key === selected ? ' sel' : ''),
+        'data-day': key,
+        'aria-label': shortDate(key) + ': ' + statsSigned(n),
+        disabled: future || null
+      });
+      const h = n ? Math.max(2, Math.abs(n) * scale) : 0;
+      if (n > 0) {
+        col.appendChild(el('div', { class: 'stats-bar up', style: 'top:' + (zeroY - h) + 'px;height:' + h + 'px;--i:' + i }));
+      } else if (n < 0) {
+        col.appendChild(el('div', { class: 'stats-bar down', style: 'top:' + zeroY + 'px;height:' + h + 'px;--i:' + i }));
+      } else if (!future) {
+        // A zero day still gets a mark, so a gap reads as a gap.
+        col.appendChild(el('div', { class: 'stats-dot', style: 'top:' + zeroY + 'px' }));
+      }
+      col.addEventListener('click', () => {
+        if (swiped || future) return;
+        haptic(6);
+        select(key);
+      });
+      cols.appendChild(col);
+
+      const dt = statsParseDay(key);
+      labels.appendChild(el('div', {
+        class: 'stats-dlabel' + (future ? ' future' : '') + (key === selected ? ' sel' : '') + (key === todayKey ? ' today' : ''),
+        'data-day': key
+      },
+        el('span', {}, dt.toLocaleDateString('en-GB', { weekday: 'narrow' })),
+        el('span', {}, String(dt.getDate()))
+      ));
+    });
+    plot.appendChild(cols);
+    inner.appendChild(plot);
+    inner.appendChild(labels);
+    chart.replaceChildren(inner);
+
+    // Range line + week total against the week before.
+    rangeMain.textContent = page === 0 ? 'This week'
+      : page === 1 ? 'Last week'
+      : shortDate(days[0]) + ' – ' + shortDate(days[6]);
+    const wn = weekNet(page);
+    const wdiff = wn - weekNet(page + 1);
+    rangeSub.textContent = statsSigned(wn) + ' words'
+      + (wdiff > 0 ? ' · ▲ ' + wdiff.toLocaleString() + ' vs week before'
+        : wdiff < 0 ? ' · ▼ ' + Math.abs(wdiff).toLocaleString() + ' vs week before'
+        : '');
+
+    prevBtn.disabled = page >= maxBack;
+    nextBtn.disabled = page <= 0;
+  }
+
+  function goPage(p) {
+    p = Math.max(0, Math.min(maxBack, p));
+    if (p === page) return;
+    const dir = p > page ? 'back' : 'fwd';
+    page = p;
+    const days = weekDays(page);
+    selected = page === 0 ? todayKey : days[6];
+    haptic(6);
+    renderChart(dir);
+    renderReadout();
+  }
+
+  // Swipe the chart sideways to page. Right pulls in the past, left heads
+  // back toward this week. Vertical drags are left alone so the sheet scrolls.
+  let sx = 0, sy = 0, sid = null;
+  chart.addEventListener('pointerdown', (e) => { sid = e.pointerId; sx = e.clientX; sy = e.clientY; });
+  chart.addEventListener('pointerup', (e) => {
+    if (e.pointerId !== sid) return;
+    sid = null;
+    const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      swiped = true;
+      setTimeout(() => { swiped = false; }, 60);
+      goPage(dx > 0 ? page + 1 : page - 1);
+    }
+  });
+  chart.addEventListener('pointercancel', () => { sid = null; });
+
+  function streak() {
+    const goal = state.settings.dailyGoal || 0;
+    const ok = (key) => {
+      const d = byDay.get(key);
+      return !!d && (goal ? d.added >= goal : d.added > 0);
+    };
+    // Today still counts as "in progress", so an empty today doesn't break it.
+    let cur = ok(todayKey) ? today : statsShiftDay(today, -1);
+    let n = 0;
+    while (n < 100000 && ok(statsDay(cur))) { n++; cur = statsShiftDay(cur, -1); }
+    return n;
+  }
+
+  async function editGoal() {
+    const pending = showPopup('Daily goal',
+      'Words to add per day. Hemingway aimed for about 500, Fleming for about 2,000. Leave it empty or 0 to turn it off.',
+      { input: state.settings.dailyGoal ? String(state.settings.dailyGoal) : '', placeholder: 'e.g. 500', okLabel: 'Save' });
+    const inp = $popupBox.querySelector('.popup-input');
+    if (inp) inp.setAttribute('inputmode', 'numeric');
+    const v = await pending;
+    if (v === null || v === undefined) return;
+    const n = Math.min(1000000, parseInt(String(v).replace(/[^0-9]/g, ''), 10) || 0);
+    await saveSetting('dailyGoal', n);
+    if (!alive) return;
+    renderChart(null);
+    renderFoot();
+  }
+
+  function renderFoot() {
+    const goal = state.settings.dailyGoal || 0;
+    const td = byDay.get(todayKey);
+    const todayAdded = td ? td.added : 0;
+    foot.replaceChildren();
+
+    foot.appendChild(el('div', { class: 'settings-row tappable', onclick: editGoal },
+      el('div', { style: 'flex: 1; min-width: 0;' },
+        el('div', { class: 'label' }, 'Daily goal'),
+        el('div', { class: 'value', style: 'margin-top: 4px;' },
+          goal ? todayAdded.toLocaleString() + ' / ' + goal.toLocaleString() + ' added today' : 'Off · tap to set one'),
+        goal ? el('div', { class: 'stats-progress' + (todayAdded >= goal ? ' done' : '') },
+          el('div', { style: 'width:' + Math.min(100, (todayAdded / goal) * 100) + '%' })) : null
+      ),
+      svg(ICON.fwd)
+    ));
+
+    const n = streak();
+    foot.appendChild(el('div', { class: 'settings-row' },
+      el('div', {},
+        el('div', { class: 'label' }, 'Streak'),
+        el('div', { class: 'stats-sub' },
+          goal ? 'Days in a row at your goal' : 'Days in a row with new words')
+      ),
+      el('div', { class: 'value' + (n ? ' stats-streak-on' : '') }, n + (n === 1 ? ' day' : ' days'))
+    ));
+  }
+
+  renderChart(null);
+  renderReadout();
+  renderFoot();
+
+  openSheet(isGlobal ? 'Writing stats · all stories' : 'Writing stats', body, () => {
+    alive = false;
+    cancelAnimationFrame(tweenRaf);
+  });
+
+  // Fill the total in the background, one story at a time, time-sliced.
+  (async () => {
+    const slugs = isGlobal ? Object.keys(titles) : [slug];
+    const stale = () => !alive || !totalSpan.isConnected;
+    let total = 0;
+    for (const s of slugs) {
+      const n = await countStoryWords(s, stale);
+      if (n === null || stale()) return;
+      total += n;
+    }
+    totalSpan.textContent = formatWordCount(total);
+  })();
+}
+
 function openMenu() {
   const body = el('div', { class: 'list' });
 
@@ -6099,6 +6815,7 @@ function openMenu() {
       openTrailSheet();
     }));
   body.appendChild(row('bulb', 'Inspire', 'Draw random prompts from your deck', () => openInspireSheet()));
+  body.appendChild(row('chart', 'Writing stats', 'Words per day in this story', () => openStatsSheet(state.story.slug)));
   body.appendChild(row('trash', 'Delete', 'Empty node, erase, or remove story', () => openDeleteSheet()));
 
   body.appendChild(el('div', { class: 'section-head' }, 'View'));
@@ -7141,6 +7858,12 @@ function openHelpSheet() {
   row('In the reader', 'The marker becomes the actual image, sized to fit the column. Tap it to open it full-size without leaving the page.');
   row('Formats', 'JPEG, PNG, WebP, GIF — whatever your browser can display. The original is kept as-is (no quality-mangling re-encode). HEIC and other oddballs get politely refused on insert rather than showing up broken.');
   row('Sharing & cleanup', 'Images travel inside exported .cyoa files. Delete the marker (or the node) and the picture is swept out on the next export, so dead weight does not ride along.');
+
+  section('Writing stats');
+  prose('Every save counts the words you added or cut, per day. Menu \u2192 Writing stats shows this story; the chart button on the Stories screen shows every story together. Bars above the line are days the story grew, bars below are days you cut more than you wrote. Tap a bar for that day, swipe or use the arrows to page through weeks.');
+  row('What counts', 'Saving in the editor, and emptying nodes (as words removed). Each save counts the change in length, so rewriting a paragraph to the same length shows as zero. Imports, the tutorial, glossary entries and erasing a whole story do not count.');
+  row('Daily goal', 'Set one in the stats sheet. It is measured on words added, so cutting never counts against you. The streak counts days in a row at your goal, or days with any new words if no goal is set.');
+  row('Where it lives', 'Stats stay on this device and are never included in exports. Deleting a story deletes its stats.');
 
   section('Spoiler mode');
   row('What it does', 'Hides full choice text. Shows subtitles instead, or a short first-line preview if no subtitle is set. Useful for collaborative stories where you want to pick a path without reading ahead.');
@@ -8686,6 +9409,10 @@ function openWriter(mode, opts) {
                 await saveStoryMeta();
               }
             }
+            // Read what was there before, for the writing-stats diff. An
+            // emptied node already has blank text, so it counts from zero.
+            const prevNode = await getNode(addr);
+            const prevText = (prevNode && !prevNode.emptied) ? (prevNode.text || '') : '';
             // Save node
             const newNode = {
               address: addr,
@@ -8696,6 +9423,7 @@ function openWriter(mode, opts) {
               emptied: false
             };
             await putNode(newNode);
+            await statsRecordDiff(prevText, text);
 
             // Wire up options for new/branch
             if (mode === 'new' && fromAddr) {
