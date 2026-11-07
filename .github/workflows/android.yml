@@ -39,6 +39,11 @@ jobs:
           mkdir -p www
           cp index.html www/index.html
           cp tutorial.cyoa www/tutorial.cyoa 2>/dev/null || true
+          # Workshop tools ride along as sibling files. Each one is optional:
+          # the Den only shows a menu row for files it can find.
+          for f in almagest.html lore-map.html lexicon.html; do
+            if [ -f "$f" ]; then cp "$f" "www/$f"; echo "Bundled $f"; else echo "Skipped $f (not in repo)"; fi
+          done
 
       - name: Generate the Android project
         run: npx cap add android
