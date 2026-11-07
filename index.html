@@ -2392,6 +2392,64 @@ nav.nav {
 @media (prefers-reduced-motion: reduce) {
   .stats-bar, .stats-inner, .stats-progress > div, .picker-today { animation: none; }
 }
+
+/* ---- Workshop: companion tools in their own layer ---- */
+/* Sits above sheets and the writer (50-63), below popups (70) and toasts
+   (80), so a tool's export toast and the leave-anyway popup show over it.
+   Safe-area padding lives here because env() reads 0 inside an iframe. */
+.tool-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  display: flex;
+  background: var(--bg);
+  padding-top: env(safe-area-inset-top);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+.tool-stage { position: relative; flex: 1; overflow: hidden; }
+.tool-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  opacity: 0;
+  transition: opacity 280ms var(--ease);
+}
+.tool-layer.ready .tool-frame { opacity: 1; }
+.tool-layer.ready.saving .tool-frame { opacity: 0.12; }
+.tool-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  pointer-events: none;
+  transition: opacity 280ms var(--ease), transform 280ms var(--ease);
+}
+.tool-layer.ready .tool-card { opacity: 0; transform: scale(0.97); }
+.tool-layer.ready.saving .tool-card { opacity: 1; transform: none; }
+.tool-card-icon { color: var(--fox); animation: toolBreathe 1.6s ease-in-out infinite; }
+.tool-card-icon svg { width: 36px; height: 36px; }
+.tool-card-name { font-family: var(--serif); font-size: 26px; color: var(--ink); }
+.tool-card-status {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 2.4px;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.tool-card-bar { width: 120px; height: 2px; margin-top: 4px; background: var(--line-soft); overflow: hidden; }
+.tool-card-bar > div { width: 40%; height: 100%; background: var(--fox); animation: toolScan 1.1s var(--ease) infinite; }
+@keyframes toolScan { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+@keyframes toolBreathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) {
+  .tool-card-icon, .tool-card-bar > div { animation: none; }
+}
 </style>
 </head>
 <body>
@@ -4763,6 +4821,9 @@ const ICON = {
   upload:  '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
   settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   zap:     '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  almagest: '<circle cx="12" cy="12" r="2.6"/><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(-25 12 12)"/><circle cx="20.9" cy="7.9" r="1.6" fill="currentColor" stroke="none"/>',
+  loremap: '<circle cx="5.5" cy="7" r="2.5"/><circle cx="18.5" cy="5.5" r="2"/><circle cx="14" cy="18" r="3"/><line x1="8" y1="6.7" x2="16.5" y2="5.8"/><line x1="7" y1="9" x2="12.2" y2="15.6"/><line x1="17.8" y1="7.4" x2="15.2" y2="15.2"/>',
+  lexicon: '<path d="M3.5 19 8.5 5l5 14"/><line x1="5.3" y1="14" x2="11.7" y2="14"/><path d="M16 6.5h5"/><path d="M18.5 4.5v2"/><path d="M20.5 6.5c0 4.5-2 8-5 10"/><path d="M16.5 10.5c1 2.5 2.6 4.6 4.5 6"/>',
   chart:   '<line x1="2" y1="14" x2="22" y2="14"/><rect x="4.5" y="8" width="3.5" height="6" fill="currentColor" stroke="none"/><rect x="10.25" y="3.5" width="3.5" height="10.5" fill="currentColor" stroke="none"/><rect x="16" y="14" width="3.5" height="5.5" fill="currentColor" stroke="none"/>',
   bulb:    '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/>',
   user:    '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
@@ -5144,6 +5205,8 @@ async function showStoryPicker() {
       list.appendChild(row);
     }
   }
+  // Workshop tools are reachable from here too, no story needed.
+  list.appendChild(workshopSection());
 
   // Writing stats: chart button opposite the crest, plus a "+N today" teaser
   // on the subtitle that only shows up once today actually has a number.
@@ -6758,6 +6821,300 @@ async function openStatsSheet(slug) {
   })();
 }
 
+/* ═════════════════════════════════════════════════════════════════
+   WORKSHOP: companion tools that live next to the Den.
+
+   Almagest, Lore Map and Lexicon are separate single-file apps. They ship
+   as sibling files beside index.html (the APK workflow copies them into
+   www/), and the Den only opens them. It never edits them, reads their
+   data, or shares anything with them. Each one runs in its own full-screen
+   iframe with its own database (vulpestech-*), the same way Almagest hosts
+   Atlas: the tool never knows it is anywhere but home.
+
+   What the Den does for them, from the outside:
+   - finds out which tool files actually exist (missing ones get no row)
+   - Android back: walks back through the tool's own history first, then
+     closes the tool once it's at its top level
+   - before closing, asks the tool to save (pagehide) and waits for its
+     save dot to settle, so nothing in a debounce queue gets lost
+   - in the APK only: catches the tools' blob downloads (which silently do
+     nothing in a WebView) and writes them to Documents, the same way the
+     Den's own Export does; routes their navigator.vibrate calls through
+     haptic(); lets their file pickers accept any file (same .bin fix as the Den)
+   All of that also applies to frames a tool opens itself (Atlas inside
+   Almagest). To update a tool, replace its file. Nothing here changes.
+   ═════════════════════════════════════════════════════════════════ */
+
+const TOOLS = [
+  { id: 'almagest', file: 'almagest.html', name: 'Almagest', sub: 'Universes, systems, and their maps', icon: 'almagest' },
+  { id: 'loremap',  file: 'lore-map.html', name: 'Lore Map', sub: 'Who and what connects to what',     icon: 'loremap' },
+  { id: 'lexicon',  file: 'lexicon.html',  name: 'Lexicon',  sub: 'Your languages and their words',    icon: 'lexicon' }
+];
+
+const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const toolAvail = new Set();
+
+// Is the file there, and is it really a tool (not some fallback page)?
+// Reads only the first chunk, then hangs up.
+async function probeTool(t) {
+  try {
+    const res = await fetch(t.file, { cache: 'no-store' });
+    if (!res.ok || !res.body) return false;
+    const reader = res.body.getReader();
+    let head = '';
+    while (head.length < 4096) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      head += new TextDecoder().decode(value);
+    }
+    reader.cancel().catch(() => {});
+    return /<title>\s*VulpesTech/i.test(head);
+  } catch (e) {
+    return false;   // file:// or offline web copy: no workshop, nothing breaks
+  }
+}
+const toolsReady = Promise.all(TOOLS.map(async (t) => {
+  if (await probeTool(t)) toolAvail.add(t.id);
+}));
+
+// Where the last tap landed, so a tool unfolds from the row you pressed.
+let lastTapX = innerWidth / 2, lastTapY = innerHeight / 2;
+document.addEventListener('pointerdown', (e) => { lastTapX = e.clientX; lastTapY = e.clientY; }, true);
+
+/* A "Workshop" block for any list. Rendered into a placeholder right away so
+   it lands in the right spot, filled in once the probe answers. */
+function workshopSection(onPick) {
+  const holder = el('div', {});
+  toolsReady.then(() => {
+    const avail = TOOLS.filter(t => toolAvail.has(t.id));
+    if (!avail.length) return;
+    holder.appendChild(el('div', { class: 'section-head' }, 'Workshop'));
+    for (const t of avail) {
+      holder.appendChild(el('button', {
+        class: 'list-row',
+        onclick: () => { haptic(8); if (onPick) onPick(); openTool(t); }
+      },
+        el('div', { class: 'row-action', style: 'color: var(--ink-soft); width: calc(28px * var(--ui-scale));' }, svg(ICON[t.icon])),
+        el('div', { class: 'row-main' },
+          el('div', { class: 'row-title' }, t.name),
+          el('div', { class: 'row-sub' }, t.sub)
+        )
+      ));
+    }
+  });
+  return holder;
+}
+
+/* ----- The layer ----- */
+
+let toolSt = null;   // { t, layer, fr, ox, oy, closing, ready }
+const toolSleep = (ms) => new Promise(r => setTimeout(r, ms));
+const toolReduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function toolCircle(x, y, r) { return 'circle(' + r + 'px at ' + x + 'px ' + y + 'px)'; }
+function toolFarthest(x, y) {
+  return Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) + 24;
+}
+
+function openTool(t) {
+  if (toolSt) return;
+  const ox = lastTapX, oy = lastTapY;
+
+  const label = el('div', { class: 'tool-card-status' }, 'opening');
+  const card = el('div', { class: 'tool-card' },
+    el('div', { class: 'tool-card-icon' }, svg(ICON[t.icon])),
+    el('div', { class: 'tool-card-name' }, t.name),
+    label,
+    el('div', { class: 'tool-card-bar' }, el('div', {}))
+  );
+  const fr = document.createElement('iframe');
+  fr.className = 'tool-frame';
+  fr.title = t.name;
+  // src before insertion: the first load replaces the iframe's blank entry
+  // instead of adding one to the back stack.
+  fr.src = t.file;
+  const layer = el('div', { class: 'tool-layer', role: 'dialog', 'aria-label': t.name },
+    el('div', { class: 'tool-stage' }, card, fr)
+  );
+  toolSt = { t, layer, fr, card, label, ox, oy, closing: false, ready: false };
+
+  fr.addEventListener('load', () => {
+    if (!toolSt || toolSt.fr !== fr) return;
+    try { hostToolFrame(fr); } catch (e) { /* the tool still works, just without the helpers */ }
+    toolSt.ready = true;
+    // One frame for the tool's first paint, then cross-fade it in.
+    requestAnimationFrame(() => requestAnimationFrame(() => layer.classList.add('ready')));
+  }, { once: true });
+
+  document.body.appendChild(layer);
+  history.pushState({ overlay: 'tool' }, '');
+
+  if (toolReduced()) {
+    layer.classList.add('in');
+  } else {
+    layer.animate(
+      [{ clipPath: toolCircle(ox, oy, 6) }, { clipPath: toolCircle(ox, oy, toolFarthest(ox, oy)) }],
+      { duration: 560, easing: 'cubic-bezier(0.6, 0, 0.2, 1)', fill: 'forwards' }
+    ).finished.then((a) => { layer.classList.add('in'); a.cancel(); }).catch(() => {});
+  }
+  // Once the layer covers everything, stop painting the Den underneath.
+  setTimeout(() => { if (toolSt && toolSt.layer === layer) $app.style.visibility = 'hidden'; }, toolReduced() ? 50 : 600);
+}
+
+// Every same-origin window in the tool: the tool itself, plus frames it
+// opened (Atlas inside Almagest).
+function toolWindows(fr) {
+  const out = [];
+  const walk = (frame) => {
+    let w = null;
+    try { w = frame.contentWindow; void w.document; } catch (e) { return; }
+    if (!w) return;
+    out.push(w);
+    for (const f of w.document.querySelectorAll('iframe')) walk(f);
+  };
+  walk(fr);
+  return out;
+}
+
+async function closeTool() {
+  const S = toolSt;
+  if (!S || S.closing) return;
+  S.closing = true;
+  const wins = S.ready ? toolWindows(S.fr) : [];
+
+  // A tool that already told you saving failed gets a chance to keep you.
+  const failing = wins.some((w) => {
+    try { const b = w.document.getElementById('banner'); return !!(b && !b.hidden); } catch (e) { return false; }
+  });
+  if (failing) {
+    const go = await showPopup(S.t.name + ' cannot save',
+      S.t.name + ' says its last changes did not save. Leaving now could lose them. Export from its menu first.',
+      { confirm: true, okLabel: 'Leave anyway', cancelLabel: 'Stay', danger: true });
+    if (!go) {
+      S.closing = false;
+      history.pushState({ overlay: 'tool' }, '');   // re-arm the back button
+      return;
+    }
+  }
+
+  // Ask every window to save, the same way Almagest asks Atlas.
+  for (const w of wins) { try { w.dispatchEvent(new Event('pagehide')); } catch (e) {} }
+  const pending = () => wins.some((w) => {
+    try { const d = w.document.getElementById('dot'); return !!(d && d.classList.contains('pending')); } catch (e) { return false; }
+  });
+  await toolSleep(60);
+  if (pending()) {
+    S.label.textContent = 'saving';
+    S.layer.classList.add('saving');
+    const t0 = performance.now();
+    while (pending() && performance.now() - t0 < 2500) await toolSleep(50);
+  }
+
+  $app.style.visibility = '';
+  const finish = () => {
+    S.layer.remove();
+    if (toolSt === S) toolSt = null;
+  };
+  if (toolReduced()) { finish(); return; }
+  S.layer.getAnimations().forEach(a => a.cancel());
+  S.layer.animate(
+    [{ clipPath: toolCircle(S.ox, S.oy, toolFarthest(S.ox, S.oy)) }, { clipPath: toolCircle(S.ox, S.oy, 6) }],
+    { duration: 420, easing: 'cubic-bezier(0.4, 0, 0.8, 0.2)', fill: 'forwards' }
+  ).finished.then(finish, finish);
+  haptic(8);
+}
+
+/* Back button. Registered before the Den's own popstate handler, so it sees
+   the event first. Back presses inside the tool pop the tool's own history
+   entries and only fire popstate inside its frame; the Den hears one only
+   when the tool's entry itself is popped, which means "leave the tool". */
+window.addEventListener('popstate', (e) => {
+  if (!toolSt) return;
+  e.stopImmediatePropagation();
+  closeTool();
+});
+
+/* ----- Helpers injected into a tool's window from the outside ----- */
+
+function hostToolFrame(fr) {
+  let w = null;
+  try { w = fr.contentWindow; void w.document; } catch (e) { return; }
+  if (!w || w.__denHosted) return;
+  w.__denHosted = true;
+  const d = w.document;
+
+  // Frames the tool opens later (Atlas) get the same treatment.
+  const adopt = (f) => {
+    f.addEventListener('load', () => { try { hostToolFrame(f); } catch (e) {} });
+    try { if (f.contentDocument && f.contentDocument.readyState === 'complete') hostToolFrame(f); } catch (e) {}
+  };
+  d.querySelectorAll('iframe').forEach(adopt);
+  new w.MutationObserver((muts) => {
+    for (const m of muts) for (const n of m.addedNodes) {
+      if (n.nodeType !== 1) continue;
+      if (n.tagName === 'IFRAME') adopt(n);
+      else if (n.querySelectorAll) n.querySelectorAll('iframe').forEach(adopt);
+      if (IS_NATIVE) widenFileInputs(n);
+    }
+  }).observe(d.documentElement, { childList: true, subtree: true });
+
+  if (!IS_NATIVE) return;   // in a browser the tools already work as they are
+
+  // Haptics: WebView ignores navigator.vibrate, the Den's haptic() doesn't.
+  try {
+    Object.defineProperty(w.navigator, 'vibrate', {
+      configurable: true,
+      value: (p) => { haptic(Array.isArray(p) ? (p[0] || 10) : (+p || 10)); return true; }
+    });
+  } catch (e) {}
+
+  widenFileInputs(d);
+
+  // Downloads: every tool exports by clicking a temporary <a download> with a
+  // blob URL. Catch that click before the WebView swallows it.
+  d.addEventListener('click', (e) => {
+    const a = e.target && e.target.closest ? e.target.closest('a[download]') : null;
+    if (!a || !/^(blob|data):/.test(a.href)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    toolSaveFile(w, a.getAttribute('download') || 'export', a.href);
+  }, true);
+}
+
+// Same fix as the Den's own picker: Android maps unknown extensions to
+// octet-stream and then hides them, so on native accept anything. The tools
+// check what they import themselves.
+function widenFileInputs(root) {
+  if (!root || !root.querySelectorAll) return;
+  const list = root.matches && root.matches('input[type="file"]') ? [root] : [];
+  root.querySelectorAll('input[type="file"]').forEach(i => list.push(i));
+  for (const i of list) i.setAttribute('accept', '*/*');
+}
+
+async function toolSaveFile(w, name, href) {
+  const fs = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+  try {
+    if (!fs || typeof fs.writeFile !== 'function') throw new Error('no filesystem');
+    const blob = await (await w.fetch(href)).blob();
+    const isText = /^text\/|json|xml|javascript|csv/.test(blob.type) || /\.(json|txt|md|csv|svg|cyoa)$/i.test(name);
+    if (isText) {
+      await fs.writeFile({ path: name, data: await blob.text(), directory: 'DOCUMENTS', encoding: 'utf8' });
+    } else {
+      const b64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(',')[1] || '');
+        r.onerror = () => rej(r.error);
+        r.readAsDataURL(blob);
+      });
+      await fs.writeFile({ path: name, data: b64, directory: 'DOCUMENTS' });
+    }
+    toast('Saved to Documents: ' + name, 2600);
+    haptic(15);
+  } catch (e) {
+    toast('Could not save ' + name, 2600);
+  }
+}
+
 function openMenu() {
   const body = el('div', { class: 'list' });
 
@@ -6820,6 +7177,10 @@ function openMenu() {
   body.appendChild(row('bulb', 'Inspire', 'Draw random prompts from your deck', () => openInspireSheet()));
   body.appendChild(row('chart', 'Writing stats', 'Words per day in this story', () => openStatsSheet(state.story.slug)));
   body.appendChild(row('trash', 'Delete', 'Empty node, erase, or remove story', () => openDeleteSheet()));
+
+  // Companion tools, each in its own isolated layer. Rows appear only for the
+  // tool files that are actually shipped next to the Den.
+  body.appendChild(workshopSection(() => closeSheet()));
 
   body.appendChild(el('div', { class: 'section-head' }, 'View'));
   body.appendChild(row('eye', state.settings.spoilerMode ? 'Spoilers: hidden' : 'Spoilers: shown', 'Tap to toggle', async () => {
@@ -7861,6 +8222,11 @@ function openHelpSheet() {
   row('In the reader', 'The marker becomes the actual image, sized to fit the column. Tap it to open it full-size without leaving the page.');
   row('Formats', 'JPEG, PNG, WebP, GIF — whatever your browser can display. The original is kept as-is (no quality-mangling re-encode). HEIC and other oddballs get politely refused on insert rather than showing up broken.');
   row('Sharing & cleanup', 'Images travel inside exported .cyoa files. Delete the marker (or the node) and the picture is swept out on the next export, so dead weight does not ride along.');
+
+  section('Workshop');
+  prose('Almagest, Lore Map and Lexicon can open right inside the Den, from the menu or the Stories screen. Each one runs on its own with its own saved data, exactly as it does in its own tab. Nothing is shared with your stories.');
+  row('Leaving', 'Back walks back inside the tool first (Almagest\u2019s universe and system views, for example), then returns you to the Den where you left it. The tool saves on the way out.');
+  row('Exports', 'In the app, a tool\u2019s export lands in your Documents folder, same as Den exports.');
 
   section('Writing stats');
   prose('Every save counts the words you added or cut, per day. Menu \u2192 Writing stats shows this story; the chart button on the Stories screen shows every story together. Bars above the line are days the story grew, bars below are days you cut more than you wrote. Tap a bar for that day, swipe or use the arrows to page through weeks.');

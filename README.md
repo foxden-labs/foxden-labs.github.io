@@ -31,6 +31,20 @@ It runs as one self-contained web page. Nothing to install, no account to make, 
 > [!NOTE]
 > **New here?** The Den ships with a full interactive tutorial built right in. It will teach you everything you need to know if you prefer a more hands-on approach.
 
+## The Den 2.0: The workshop update
+
+The Den now contains three companion tools that were in the works for nearly a year.
+
+- **Almagest:** For all your mapping and charting needs. Universes, galaxies, star systems, and a live map editor for each celestial body.
+- **Lore Map:** Tool built for tracking importance of various aspects of your stories, isolated from The Den's wiki system.
+- **Lexicon:** Build conlangs from scratch with custom rules and an easy-to-use typing window that tracks what words you need to assign and which ones already exist, then apply the rules for how these languages degrade over time.
+
+Each tool has a built-in demo and runs on its own saved data. They are available as standalone tools within their own .html files.
+
+<p align="center">
+  <img src="assets/screenshots/den-2.0-workshop.png" alt="The Workshop: Almagest showing a star system, Lore Map showing a web of connected story elements, and Lexicon showing a conlang's words across its stages" width="90%">
+</p>
+
 ## Why The Den
 
 - **One file, fully offline.** The entire app lives in a single HTML file with zero external dependencies to fetch. Your stories are saved locally, right in your own browser, so once you download it, it never touches the network again. It works on a plane, in a basement, on dead Wi-Fi. Download it once and it's yours.
