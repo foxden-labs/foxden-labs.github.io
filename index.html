@@ -4956,11 +4956,20 @@ $sheetBackdrop.addEventListener('click', closeSheet);
    Firefox Android). Where the key isn't supported the browser falls back to
    its native focus-scrolling. */
 
+// What the editor's fields held when it opened. The Android back button
+// compares against this so it only asks before discarding real edits.
+let overlaySnap = '';
+function overlayFieldState() {
+  return [...$overlay.querySelectorAll('textarea, input, select')]
+    .map(f => (f.type === 'checkbox' || f.type === 'radio') ? String(f.checked) : f.value)
+    .join('\u0000');
+}
 function openOverlay(content) {
   $overlay.innerHTML = '';
   $overlay.appendChild(content);
   void $overlay.offsetWidth;
   $overlay.classList.add('show');
+  overlaySnap = overlayFieldState();
   history.pushState({ overlay: 'overlay' }, '');
 }
 function closeOverlay() {
@@ -7034,6 +7043,64 @@ window.addEventListener('popstate', (e) => {
   closeTool();
 });
 
+/* ----- Android back button (APK only) -----
+   Capacitor's core never passes the back button to the page. Only the
+   @capacitor/app plugin does, so without it back just sent the whole app to
+   the background and a Workshop tool could never be closed. With the plugin
+   in, this listener decides what back means, topmost layer first:
+
+     popup         dismissed, same as tapping outside it
+     image         lightbox closed
+     tool          one step back inside the tool (Almagest's drill-down),
+                   then the tool closes and saves, via the popstate above
+     sheet         closed (menu, stats, inspire, any bottom sheet)
+     tree view     closed
+     editor        closed, but asks first if you changed anything, since
+                   back is the same as Cancel there
+     nothing open  app goes to the background, like before
+
+   Den layers are closed directly instead of through browser history, so a
+   stale history entry can never make back do nothing. On the web none of
+   this runs; the browser's own back button keeps working as it always has. */
+(function () {
+  const AppPlugin = IS_NATIVE && window.Capacitor.Plugins && window.Capacitor.Plugins.App;
+  if (!AppPlugin || typeof AppPlugin.addListener !== 'function') return;
+  let asking = false;
+
+  AppPlugin.addListener('backButton', async () => {
+    if ($popupHost.classList.contains('show')) { resolvePopup(null); return; }
+
+    const lightbox = document.querySelector('.img-lightbox');
+    if (lightbox) { lightbox.click(); return; }
+
+    if (toolSt) {
+      if (!toolSt.closing) history.back();
+      return;
+    }
+
+    if ($sheet.classList.contains('show')) { closeSheet(); return; }
+
+    if ($treeOverlay && $treeOverlay.classList.contains('show')) { closeTreeView(); return; }
+
+    if ($overlay.classList.contains('show')) {
+      if (asking) return;
+      if (overlayFieldState() !== overlaySnap) {
+        asking = true;
+        const leave = await showPopup('Discard changes?',
+          'Back closes the editor without saving.',
+          { confirm: true, okLabel: 'Discard', cancelLabel: 'Keep editing', danger: true });
+        asking = false;
+        if (!leave) return;
+      }
+      closeOverlay();
+      haptic(8);
+      return;
+    }
+
+    AppPlugin.minimizeApp();
+  });
+})();
+
 /* ----- Helpers injected into a tool's window from the outside ----- */
 
 function hostToolFrame(fr) {
@@ -8226,6 +8293,7 @@ function openHelpSheet() {
   section('Workshop');
   prose('Almagest, Lore Map and Lexicon can open right inside the Den, from the menu or the Stories screen. Each one runs on its own with its own saved data, exactly as it does in its own tab. Nothing is shared with your stories.');
   row('Leaving', 'Back walks back inside the tool first (Almagest\u2019s universe and system views, for example), then returns you to the Den where you left it. The tool saves on the way out.');
+  row('Back in the app', 'Back closes whatever is on top: a popup, an image, a tool, a sheet, the tree view, or the editor (it asks first if you changed something). With nothing open, it sends the app to the background.');
   row('Exports', 'In the app, a tool\u2019s export lands in your Documents folder, same as Den exports.');
 
   section('Writing stats');
