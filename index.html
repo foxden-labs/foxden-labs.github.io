@@ -2555,8 +2555,12 @@ const DEFAULT_SETTINGS = {
                      // across all stories), persisted in registry.settings, and
                      // deliberately NOT bundled into .cyoa exports.
   inspireCount: 3,   // last-used number of cards to draw
-  dailyGoal: 0       // writing stats daily word goal (words added). 0 = off.
+  dailyGoal: 0,      // writing stats daily word goal (words added). 0 = off.
                      // Global, one goal for all stories.
+  bootScreen: true   // the boot sequence when a story opens or is created.
+                     // Off = a quick fade straight into the node. The forced
+                     // shift veil is separate and always plays: it's the only
+                     // signal that a shift happened.
 };
 
 /* ----- Global state ----- */
@@ -4824,6 +4828,7 @@ const ICON = {
   almagest: '<circle cx="12" cy="12" r="2.6"/><ellipse cx="12" cy="12" rx="10" ry="4.2" transform="rotate(-25 12 12)"/><circle cx="20.9" cy="7.9" r="1.6" fill="currentColor" stroke="none"/>',
   loremap: '<circle cx="5.5" cy="7" r="2.5"/><circle cx="18.5" cy="5.5" r="2"/><circle cx="14" cy="18" r="3"/><line x1="8" y1="6.7" x2="16.5" y2="5.8"/><line x1="7" y1="9" x2="12.2" y2="15.6"/><line x1="17.8" y1="7.4" x2="15.2" y2="15.2"/>',
   lexicon: '<path d="M3.5 19 8.5 5l5 14"/><line x1="5.3" y1="14" x2="11.7" y2="14"/><path d="M16 6.5h5"/><path d="M18.5 4.5v2"/><path d="M20.5 6.5c0 4.5-2 8-5 10"/><path d="M16.5 10.5c1 2.5 2.6 4.6 4.5 6"/>',
+  power:   '<path d="M12 3v8"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>',
   chart:   '<line x1="2" y1="14" x2="22" y2="14"/><rect x="4.5" y="8" width="3.5" height="6" fill="currentColor" stroke="none"/><rect x="10.25" y="3.5" width="3.5" height="10.5" fill="currentColor" stroke="none"/><rect x="16" y="14" width="3.5" height="5.5" fill="currentColor" stroke="none"/>',
   bulb:    '<path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/>',
   user:    '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
@@ -5928,6 +5933,20 @@ function buildDivergenceMeter(addr) {
    once, whether it runs to completion or is skipped. */
 let bootActive = false;
 function playBootSequence(storyName, destAddr, navigate) {
+  // Boot screen switched off: navigate, then fade the reader in instead of a
+  // hard cut. Same contract as the full sequence: navigation always runs and
+  // the promise resolves exactly once.
+  if (!state.settings.bootScreen) {
+    return (async () => {
+      try { if (navigate) await navigate(); } catch (e) {}
+      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        try {
+          $app.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }],
+            { duration: 260, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' });
+        } catch (e) {}
+      }
+    })();
+  }
   return new Promise((resolve) => {
     // Idempotency guard: if a boot is already running, don't stack a second
     // one. Still run the navigation (so the destination loads) and resolve
@@ -7269,6 +7288,10 @@ function openMenu() {
     state.shuffleSeed++;
     renderMain();
   }));
+  body.appendChild(row('power', state.settings.bootScreen ? 'Boot screen: on' : 'Boot screen: off', 'The intro when a story opens', async () => {
+    await saveSetting('bootScreen', !state.settings.bootScreen);
+    toast('Boot screen ' + (state.settings.bootScreen ? 'on' : 'off'));
+  }));
   body.appendChild(row('zap', state.settings.shiftOn ? 'Forced shift: ON' : 'Forced shift: OFF',
     `Counter ${state.story.shiftN1}/${state.story.shiftN2}`, async () => {
       await saveSetting('shiftOn', !state.settings.shiftOn);
@@ -8326,6 +8349,7 @@ function openHelpSheet() {
   section('Forced shift');
   row('What it does', 'A chaos mechanic. Every navigation increments a counter. When the counter hits the trigger, you are thrown to a random node and the trigger increases by 1 (so the next shift takes longer). Meant for collaborative or exploratory reading.');
   row('Toggle', 'Menu → Forced shift on/off. Counter shown in Settings.');
+  row('Boot screen', 'Menu → Boot screen on/off turns off the intro when a story opens. The shift veil always plays, so a shift never goes unnoticed.');
   row('Reset counter', 'Settings → Reset shift counter.');
 
   section('Rating filter');
