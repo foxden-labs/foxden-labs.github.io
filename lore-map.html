@@ -465,6 +465,11 @@ tag things like [Name] or [[Cin] [Auravel]].</div>
     <div class="hint" id="lastexp"></div>
     <div class="g2" style="margin-top:8px"><button id="b-demo">Load demo map</button><span></span></div>
   </details>
+  <details class="sec" open>
+    <summary>Plain text</summary>
+    <div class="g3"><button id="b-txt" class="boom">Save .md</button><button id="b-txtcopy">Copy</button><button id="b-txtall">All maps</button></div>
+    <div class="hint">every node as a heading with its entry underneath, sorted a to z. text is copied exactly as written, tags and all. no links, no positions, no colours.</div>
+  </details>
   <details class="sec" id="d-store">
     <summary>Storage</summary>
     <div class="hint" id="store" style="margin-top:0"></div>
@@ -2754,8 +2759,8 @@ you add Cinnabar as its alias.</pre>
     return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
   }
   const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'map';
-  function download(name, text) {
-    const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+  function download(name, text, type) {
+    const url = URL.createObjectURL(new Blob([text], { type: type || 'application/json' }));
     const a = document.createElement('a');
     a.href = url; a.download = name;
     document.body.appendChild(a);
@@ -2777,6 +2782,65 @@ you add Cinnabar as its alias.</pre>
     renderLastExport();
     say('exported. one more backup between you and despair.');
   }
+  /* ---------- plain text: the whole lore as one readable document ----------
+     a heading per node, the entry verbatim underneath, a to z. the only thing touched is a
+     line that starts with # inside an entry: it gets a backslash, so it can not pose as a
+     heading and break the structure. everything else goes out exactly as typed */
+
+  const ABC = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true }) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+  const words = (t) => (t.match(/\S+/g) || []).length;
+  async function loreText(list) {
+    commitName();
+    await flushSaves();
+    const d = new Date(), p = (v) => String(v).padStart(2, '0');
+    const when = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+    const parts = [];
+    let nc = 0, wc = 0;
+    for (const m of list) {
+      const ns = (await nodesOf(m)).slice().sort(ABC);
+      const mw = ns.reduce((s, n) => s + words(n.text), 0);
+      nc += ns.length; wc += mw;
+      let h = '# ' + m.name + '\n\n' + ns.length + ' node' + (ns.length === 1 ? '' : 's') + ', ' + mw.toLocaleString('en') + ' words. exported ' + when + '.\n';
+      for (const n of ns) {
+        h += '\n\n## ' + n.name + '\n';
+        if (n.aliases && n.aliases.length) h += '\n*aka ' + n.aliases.join(', ') + '*\n';
+        const body = n.text.replace(/\r\n?/g, '\n').replace(/^(\s*)#/gm, '$1\\#').replace(/\s+$/, '');
+        h += '\n' + (body || '*(empty)*') + '\n';
+      }
+      parts.push(h);
+    }
+    return { text: parts.join('\n\n---\n\n'), nc: nc, wc: wc };
+  }
+  async function copyText(t) {
+    try { if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(t); return true; } } catch (err) { /* fall through */ }
+    const ta = document.createElement('textarea');
+    ta.value = t;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (err) { ok = false; }
+    ta.remove();
+    return ok;
+  }
+  const tally = (r) => r.nc + ' node' + (r.nc === 1 ? '' : 's') + ', ' + r.wc.toLocaleString('en') + ' words';
+  $('b-txt').addEventListener('click', async () => {
+    const r = await loreText([map]);
+    download('lore-' + slug(map.name) + '-' + stamp() + '.md', r.text, 'text/markdown;charset=utf-8');
+    say('saved ' + tally(r) + '. the whole lore, flattened.');
+  });
+  $('b-txtall').addEventListener('click', async () => {
+    const r = await loreText(maps);
+    download('lore-all-' + stamp() + '.md', r.text, 'text/markdown;charset=utf-8');
+    say('saved ' + maps.length + ' maps, ' + tally(r) + '.');
+  });
+  $('b-txtcopy').addEventListener('click', async () => {
+    const r = await loreText([map]);
+    if (await copyText(r.text)) say('copied ' + tally(r) + '. paste away.');
+    else { download('lore-' + slug(map.name) + '-' + stamp() + '.md', r.text, 'text/markdown;charset=utf-8'); say('the browser refused the clipboard, so it went to a file instead.'); }
+  });
+
   $('b-exp').addEventListener('click', () => exportMaps([map]));
   $('b-expall').addEventListener('click', () => exportMaps(maps));
   $('banner-exp').addEventListener('click', () => exportMaps(maps));

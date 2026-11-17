@@ -480,7 +480,8 @@ pre.syntax em { font-style: normal; color: var(--acc); }
 .drow button { min-width: 44px; }
 .dres { overflow-y: auto; overscroll-behavior: contain; padding: 6px 10px 12px; }
 .rolls { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 4px; }
-.rolls button { min-height: 48px; font-family: var(--mono); font-size: 18px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.rolls button { min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; font-family: var(--mono); font-size: 18px; font-weight: 600; text-transform: none; letter-spacing: 0; }
+.rolls button .rnew { font-size: 10px; font-weight: 400; color: #777; transition: opacity .2s; }
 
 .modal { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, .7); }
 .mbox { width: min(420px, 100%); padding: 10px 12px 12px; background: #050505; border: 1px solid var(--acc); box-shadow: 0 0 40px rgba(249, 115, 22, .12); }
@@ -3059,7 +3060,7 @@ pre.syntax em { font-style: normal; color: var(--acc); }
   function rollAssign() {
     const el = $('as-rolls');
     if (!el) return;
-    el.innerHTML = rollRoots(9).map((f) => '<button data-rf="' + esc(f) + '">' + esc(f) + '</button>').join('');
+    el.innerHTML = rollRoots(9).map((f) => rollTile(f, 'data-rf')).join('');
   }
   function near1(a, b) {
     if (Math.abs(a.length - b.length) > 1 || Math.min(a.length, b.length) < 3) return false;
@@ -3496,32 +3497,52 @@ pre.syntax em { font-style: normal; color: var(--acc); }
     const Cs = pool(false), Vs = pool(true);
     const draw = (P) => { let t = 0; for (const x of P) t += x[1]; let r = Math.random() * t; for (const x of P) { r -= x[1]; if (r <= 0) return x[0]; } return P.length ? P[P.length - 1][0] : ''; };
     const shapes = String(p.shapes || 'CV CVC').split(/\s+/).filter(Boolean);
-    // taken at any stage counts as taken: a fresh root should not be born sounding like an old one
+    // taken means three things. it already is a word at some stage. or the rules would wear it
+    // into a word that already exists at that stage. or it is a near twin of a roll in this batch
     const have = new Set();
-    for (const w of words) lang.stages.forEach((st, k) => have.add(formOf(w, k).toLowerCase()));
-    const out = new Set();
-    for (let tries = 0; tries < 400 && out.size < n; tries++) {
+    for (const w of words) lang.stages.forEach((st, k) => { const f = formOf(w, k).toLowerCase(); if (f) have.add(f); });
+    const FI = fIndex();
+    const out = [];
+    const erodesInto = (f) => {
+      const d = derive({ form: f });
+      for (let k = 1; k < lang.stages.length; k++) {
+        const g = show(d, k).toLowerCase();
+        if (g && (FI.get(g) || []).some((e) => e.k === k)) return true;
+      }
+      return false;
+    };
+    for (let tries = 0; tries < 600 && out.length < n; tries++) {
       const sh = shapes[Math.floor(Math.random() * shapes.length)];
       let f = '';
       for (const c of sh) f += c === 'C' ? draw(Cs) : c === 'V' ? draw(Vs) : c.toLowerCase();
       if (!f || f.length < 2 || have.has(f) || /(.)\1\1/.test(f)) continue;
-      out.add(f);
+      if (out.includes(f) || out.some((o) => near1(o, f))) continue;
+      if (erodesInto(f)) continue;
+      out.push(f);
     }
-    return [...out];
+    return out;
+  }
+  // what a roll turns into by the last stage, shown small under the tile
+  function rollTile(f, attr) {
+    const S = lang.stages, last = S.length - 1;
+    const g = last > 0 ? show(derive({ form: f }), last) : f;
+    return '<button ' + attr + '="' + esc(f) + '"><span class="rf0">' + esc(f) + '</span>' + (g && g !== f ? '<small class="rnew">' + esc(S[last].name.toLowerCase()) + ' ' + esc(g) + '</small>' : '') + '</button>';
   }
   const isRollOpen = () => $('roll').classList.contains('open');
   function openRoll() {
     const list = rollRoots(12);
     $('roll-sub').textContent = '(' + lang.name + ')';
-    $('rolls').innerHTML = list.map((f) => '<button data-f="' + esc(f) + '">' + esc(f) + '</button>').join('') || '<div class="empty">nothing rolls. loosen the palette.</div>';
-    $('roll-hint').textContent = 'built from your roll shapes and the letters your roots already lean on. tap one to keep it.';
+    $('rolls').innerHTML = list.map((f) => rollTile(f, 'data-f')).join('') || '<div class="empty">nothing rolls. loosen the palette.</div>';
+    $('roll-hint').textContent = 'built from your roll shapes and the letters your roots already lean on. nothing here is a word you have, or wears down into one. tap one to keep it.';
     $('roll').classList.add('open');
     $('rolls').querySelectorAll('button').forEach((b, i) => {
       if (still()) return;
       // a quick slot-machine flicker before each lands
       const fin = b.dataset.f, n = 4 + i % 3;
       let k = 0;
-      const tick = () => { if (k++ < n) { b.textContent = rollRoots(1)[0] || fin; setTimeout(tick, 45 + k * 15); } else { b.textContent = fin; anim(b, [{ color: '#f97316' }, { color: '#f5f5f5' }], { duration: 500, easing: 'ease-out' }); } };
+      const sp = b.querySelector('.rf0'), sm = b.querySelector('.rnew');
+      if (sm) sm.style.opacity = '0';
+      const tick = () => { if (k++ < n) { sp.textContent = rollRoots(1)[0] || fin; setTimeout(tick, 45 + k * 15); } else { sp.textContent = fin; anim(b, [{ color: '#f97316' }, { color: '#f5f5f5' }], { duration: 500, easing: 'ease-out' }); if (sm) { sm.style.opacity = ''; anim(sm, [{ opacity: 0, transform: 'translateY(-3px)' }, { opacity: 1, transform: 'none' }], { duration: 300 }); } } };
       setTimeout(tick, i * 30);
     });
   }
@@ -3935,7 +3956,7 @@ pre.syntax em { font-style: normal; color: var(--acc); }
   }
 
   if (/[?&]test\b/.test(location.search)) window.__LX = {
-    get words() { return words; }, get lang() { return lang; }, formOf: formOf, clsOf: clsOf, deadAt: deadAt, queueWord: queueWord, renderDraft: () => renderDraft(), wd: wd, fd: fd, analyze: analyze, applyRule: applyRule,
+    get words() { return words; }, get lang() { return lang; }, rollRoots: (n) => rollRoots(n), formOf: formOf, clsOf: clsOf, deadAt: deadAt, queueWord: queueWord, renderDraft: () => renderDraft(), wd: wd, fd: fd, analyze: analyze, applyRule: applyRule,
     parsePat: parsePat, flush: flushSaves, get sel() { return sel; }, openWord: openWord, setTab: setTab, invalidate: invalidate, autoGloss: autoGloss
   };
 
